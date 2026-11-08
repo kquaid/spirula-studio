@@ -283,6 +283,16 @@ public:
     void load_region();
     void setup_region();
 
+    // Multiframe: the previous frame's trained splats, in training space. The
+    // next setup_engine() seeds from them, once, instead of from a seed cloud.
+    std::optional<SeedSplats> carried_splats;
+    // The live splats copied to the host, trimmed to the live count so a
+    // session seeded from them has no room to grow. Caller holds engine_mutex.
+    SeedSplats capture_splats() const;
+    // Points ds at another frame's folder: the image, depth and normal paths
+    // move from `from` to `to`, and cfg.data follows. Cameras stay as parsed.
+    void rebase_dataset(const std::string& from, const std::string& to);
+
     // Create the output dir, dump config.json, reset + seed the engine,
     // set up the DataManager and bilagrid/PPISP. Requires load_dataset().
     void setup_engine();

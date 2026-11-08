@@ -1603,6 +1603,11 @@ void TrainerSession::setup_engine() {
 // Where the run's first splats come from: the dataset's point cloud, an
 // --init-ply warm start, or both. A resume overwrites them either way.
 SeedSplats TrainerSession::seed_world(const ColorResolution& color) {
+    if (carried_splats) {
+        SeedSplats carried = std::move(*carried_splats);
+        carried_splats.reset();
+        return carried;
+    }
     if (cfg.init_ply.empty() || !cfg.resume.empty())
         return seed_splats(ds.points, cfg, color);
 
@@ -1667,6 +1672,54 @@ void TrainerSession::restore_checkpoint() {
         cfg.background_sh_degree = bg_deg;
     }
     log(lfmt(lmsg::resumed_from, {r.ckpt_dir.string(), (long long)start_step}));
+}
+
+SeedSplats TrainerSession::capture_splats() const {
+    SeedSplats s;
+    const int64_t cap = engine_get_max_num_splats();
+    const int64_t K = engine_get_num_sh();
+    s.num = engine_get_cur_num_splats();
+    s.means.resize((size_t)(cap * 3));
+    s.quats.resize((size_t)(cap * 4));
+    s.scales.resize((size_t)(cap * 3));
+    s.opacities.resize((size_t)cap);
+    s.features_dc.resize((size_t)(cap * 3));
+    s.features_sh.resize((size_t)(cap * K * 3));
+    auto tv = [](std::vector<float>& v, std::vector<int64_t> shape) -> TorchTensorView {
+        return {(uint64_t)(uintptr_t)(v.empty() ? nullptr : v.data()), (uint32_t)sizeof(float),
+                std::move(shape)};
+    };
+    engine_copy_splats_to_host(tv(s.means, {cap, 3}), tv(s.quats, {cap, 4}),
+                               tv(s.scales, {cap, 3}), tv(s.opacities, {cap, 1}),
+                               tv(s.features_dc, {cap, 3}), tv(s.features_sh, {cap, K, 3}));
+    s.means.resize((size_t)(s.num * 3));
+    s.quats.resize((size_t)(s.num * 4));
+    s.scales.resize((size_t)(s.num * 3));
+    s.opacities.resize((size_t)s.num);
+    s.features_dc.resize((size_t)(s.num * 3));
+    s.features_sh.resize((size_t)(s.num * K * 3));
+    return s;
+}
+
+void TrainerSession::rebase_dataset(const std::string& from, const std::string& to) {
+    auto folder = [](const std::string& p) {
+        fs::path q = fs::absolute(p).lexically_normal();
+        return q.has_filename() ? q : q.parent_path();
+    };
+    const fs::path a = folder(from), b = folder(to);
+    auto move = [&](std::vector<std::string>& files) {
+        for (std::string& f : files) {
+            if (f.empty()) continue;
+            const fs::path rel = fs::absolute(f).lexically_normal().lexically_relative(a);
+            if (rel.empty() || *rel.begin() == "..")
+                throw std::runtime_error(lfmt(lmsg::mf_err_outside_root, {f, from}));
+            f = (b / rel).string();
+        }
+    };
+    move(ds.image_filenames);
+    move(ds.depth_filenames);
+    move(ds.normal_filenames);
+    cfg.data = to;
 }
 
 std::filesystem::path TrainerSession::save_checkpoint(int step, bool full) {
