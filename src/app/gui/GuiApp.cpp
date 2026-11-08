@@ -1223,6 +1223,11 @@ void GuiApp::open_dataset(std::string dir, std::string image_dir,
         _multiframe_session = multiframe;
         _cfg.save_sog = _defaults.save_sog = multiframe;
     }
+    if (multiframe) {
+        _mf.first_frame = _mf.last_frame = -1;
+        _mf.output_dir.clear();
+        _mf_range = false;
+    }
     _runner.load_dataset(_cfg, _preset);
     _screen = train_screen();
 }
@@ -1410,7 +1415,8 @@ void GuiApp::stop_inference_users() {
     _mask_editor.sam_yield();
 }
 
-void GuiApp::launch_training(const TrainConfig& cfg, const std::string& preset) {
+void GuiApp::launch_training(const TrainConfig& cfg, const std::string& preset,
+                             const spirula::MultiframeSettings* multiframe) {
     if (cfg.data.empty() || native_work_busy()) return;
     stop_inference_users();
     close_splat();
@@ -1428,11 +1434,18 @@ void GuiApp::launch_training(const TrainConfig& cfg, const std::string& preset) 
     open_run_log(_train_log, data_dir, "train", run_log_stamp());
     set_ss_env("UNREG_LOG", "");
     write_run_settings(_train_log);
-    _runner.start_training(cfg, preset);
+    if (multiframe) _runner.start_multiframe(cfg, preset, *multiframe);
+    else _runner.start_training(cfg, preset);
 }
 
 void GuiApp::start_training() {
-    launch_training(_cfg, _preset);
+    if (!_multiframe_session) {
+        launch_training(_cfg, _preset);
+        return;
+    }
+    spirula::MultiframeSettings batch = _mf;
+    if (!_mf_range) batch.first_frame = batch.last_frame = -1;
+    launch_training(_cfg, _preset, &batch);
 }
 
 void GuiApp::detach_session_views() {
@@ -3035,6 +3048,7 @@ const char* GuiApp::dir_key(PickAction a, FileDialog::Mode m) {
         case PickAction::RenderOutput:      return "render_output";
         case PickAction::Workspace:
         case PickAction::OutputPrefix:
+        case PickAction::MultiframeOutput:
         case PickAction::BatchOutput:
         case PickAction::MeshOutput:        return "output";
         case PickAction::VocabTree:         return "vocab";
@@ -3087,6 +3101,9 @@ void GuiApp::handle_dialog_result(const std::vector<std::string>& paths) {
         case PickAction::OpenMultiframe:
             _next_open_multiframe = true;
             request_open_dataset(path);
+            break;
+        case PickAction::MultiframeOutput:
+            _mf.output_dir = path;
             break;
         case PickAction::ResumeRun:
             open_resume(path);
@@ -9464,13 +9481,42 @@ void GuiApp::draw_multiframe_train() {
 void GuiApp::draw_multiframe_panel() {
     ui::SeparatorText(msg::multiframe_title);
     ImGui::BeginDisabled(training_busy());
-    ui::Checkbox(fld::save_sog, &_cfg.save_sog);
+    if (ui::Checkbox(msg::mf_range, &_mf_range) && _mf_range) {
+        // Start the range on the opened folder, so enabling it changes nothing yet.
+        fs::path folder = fs::path(_cfg.data).lexically_normal();
+        if (!folder.has_filename()) folder = folder.parent_path();
+        const int opened = spirula::multiframe_frame_number(folder.filename().string());
+        if (_mf.first_frame < 0) _mf.first_frame = std::max(opened, 0);
+        if (_mf.last_frame < 0) _mf.last_frame = _mf.first_frame;
+    }
+    ui::help_on_hover(msg::mf_range_help);
+    if (_mf_range) {
+        ui::InputInt(msg::mf_first, &_mf.first_frame);
+        ui::InputInt(msg::mf_last, &_mf.last_frame);
+        _mf.first_frame = std::max(_mf.first_frame, 0);
+        _mf.last_frame = std::max(_mf.last_frame, _mf.first_frame);
+    }
+    ui::InputInt(msg::mf_iterations, &_mf.frame_iterations);
+    _mf.frame_iterations = std::max(_mf.frame_iterations, 1);
+    ui::help_on_hover(msg::mf_iterations_help);
+    ui::InputFloat(msg::mf_lr_scale, &_mf.lr_scale, 0.1f, 1.0f, "%.3g");
+    _mf.lr_scale = std::max(_mf.lr_scale, 0.0f);
+    ui::help_on_hover(msg::mf_lr_scale_help);
+    const float bw = ImGui::GetFrameHeight() + 6.0f;
+    ImGui::SetNextItemWidth(-bw);
+    ui::InputTextWithHintRaw("##mfout", msg::mf_output_hint, &_mf.output_dir);
+    ui::help_on_hover(msg::mf_output_help);
+    ImGui::SameLine(0, 2);
+    if (ui::ButtonRaw("...##mfout"))
+        open_pick(PickAction::MultiframeOutput, msg::batch_pick_output.get(),
+                  FileDialog::Mode::Folder, {}, _mf.output_dir);
     ImGui::EndDisabled();
-    ui::help_on_hover(fld::save_sog_help);
-    ui::TextDisabledWrapped(msg::multiframe_sog_note);
+    ui::TextDisabledWrapped(msg::mf_frozen_note);
+    int frame = 0, index = 0, total = 0;
+    if (_runner.multiframe_progress(frame, index, total) && total > 0)
+        ui::TextDisabled(msg::mf_progress, {(long long)frame, (long long)(index + 1), (long long)total});
     ImGui::Spacing();
 }
-
 
 // ===========================================================================
 // Viewer screen

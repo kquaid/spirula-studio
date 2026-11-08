@@ -160,6 +160,7 @@ void TrainRunner::load_dataset(const TrainConfig& cfg, const std::string& preset
     _session->cfg = cfg;
     _session->preset = preset;
     _session->log_fn = [this](const std::string& s) { push_log(s); };
+    _mf_active = false;
     _phase = Phase::Loading;
     TrainerSession* s = _session.get();
     _worker = std::thread([this, s] {
@@ -190,6 +191,7 @@ void TrainRunner::start_training(const TrainConfig& cfg, const std::string& pres
     _session->cfg = cfg;
     _session->preset = preset;
     _session->log_fn = [this](const std::string& s) { push_log(s); };
+    _mf_active = false;
     _phase = Phase::Preparing;
     TrainerSession* s = _session.get();
     _worker = std::thread([this, s] {
@@ -211,16 +213,7 @@ void TrainRunner::start_training(const TrainConfig& cfg, const std::string& pres
             viewer_upload_grid(s->post);
             _engine_ready = true;
 
-            // Optional web viewer alongside the native viewport.
-            if (!s->cfg.disable_viewer) {
-                _web_viewer.reset(new ViewerServer());
-                _web_viewer->start("0.0.0.0", s->cfg.viewer_port,
-                                   s->make_viewer_config(),
-                                   s->make_viewer_hooks(), s->post);
-                push_log(spirula::i18n::format(
-                    spirula::i18n::msg::log::web_viewer_at,
-                    {(long long)s->cfg.viewer_port}));
-            }
+            start_web_viewer(*s);
 
             _phase = Phase::Training;
             spirula::TrainerCallbacks cb;
@@ -228,26 +221,7 @@ void TrainRunner::start_training(const TrainConfig& cfg, const std::string& pres
                 return await_data_decision(what);
             };
             cb.on_step = [this, metrics_ready = false](const spirula::TrainerProgress& p) mutable {
-                std::lock_guard<std::mutex> lk(_mu);
-                _latest = p;
-                _latencies.push_back(p.step_latency);
-                if (_latencies.size() > 100) _latencies.pop_front();
-                // Scalar readbacks lag one step; the first callback has no metrics yet.
-                if (!metrics_ready) {
-                    metrics_ready = true;
-                    return;
-                }
-                MetricPoint m;
-                m.step = p.step;
-                auto get = [&](const char* k) {
-                    auto it = p.losses.find(k);
-                    return it == p.losses.end() ? 0.0f : it->second;
-                };
-                m.psnr = get("psnr");
-                m.ssim = get("ssim");
-                m.rgb_loss = get("rgb_loss");
-                m.num_splats = (float)p.num_splats;
-                _metrics.push_back(m);
+                record_step(p, metrics_ready);
             };
             s->train(cb);
             if (!s->stop_requested.load() && s->cfg.eval_mode != "all") {
@@ -257,6 +231,120 @@ void TrainRunner::start_training(const TrainConfig& cfg, const std::string& pres
                     _eval = p;
                 });
             }
+            _phase = Phase::Done;
+        } catch (const std::exception& e) {
+            std::lock_guard<std::mutex> lk(_mu);
+            _error = e.what();
+            _phase = Phase::TrainError;
+        }
+    });
+}
+
+void TrainRunner::record_step(const spirula::TrainerProgress& p, bool& metrics_ready) {
+    std::lock_guard<std::mutex> lk(_mu);
+    _latest = p;
+    _latencies.push_back(p.step_latency);
+    if (_latencies.size() > 100) _latencies.pop_front();
+    // Scalar readbacks lag one step; the first callback has no metrics yet.
+    if (!metrics_ready) {
+        metrics_ready = true;
+        return;
+    }
+    MetricPoint m;
+    m.step = p.step;
+    auto get = [&](const char* k) {
+        auto it = p.losses.find(k);
+        return it == p.losses.end() ? 0.0f : it->second;
+    };
+    m.psnr = get("psnr");
+    m.ssim = get("ssim");
+    m.rgb_loss = get("rgb_loss");
+    m.num_splats = (float)p.num_splats;
+    _metrics.push_back(m);
+}
+
+// Optional web viewer alongside the native viewport.
+void TrainRunner::start_web_viewer(spirula::TrainerSession& s) {
+    if (s.cfg.disable_viewer) return;
+    _web_viewer.reset(new ViewerServer());
+    _web_viewer->start("0.0.0.0", s.cfg.viewer_port, s.make_viewer_config(),
+                       s.make_viewer_hooks(), s.post);
+    push_log(spirula::i18n::format(spirula::i18n::msg::log::web_viewer_at,
+                                   {(long long)s.cfg.viewer_port}));
+}
+
+bool TrainRunner::multiframe_progress(int& frame, int& index, int& total) const {
+    if (!_mf_active.load()) return false;
+    frame = _mf_frame.load();
+    index = _mf_index.load();
+    total = _mf_total.load();
+    return true;
+}
+
+void TrainRunner::start_multiframe(const TrainConfig& cfg, const std::string& preset,
+                                   const spirula::MultiframeSettings& settings) {
+    shutdown();
+    _engine_ready = false;
+    {
+        std::lock_guard<std::mutex> lk(_mu);
+        _error.clear();
+        _latest = {};
+        _eval = {};
+        _latencies.clear();
+        _metrics.clear();
+    }
+    _session.reset(new TrainerSession());
+    _session->cfg = cfg;
+    _session->preset = preset;
+    _session->log_fn = [this](const std::string& s) { push_log(s); };
+    _mf_active = true;
+    _mf_total = 0;
+    _phase = Phase::Preparing;
+    TrainerSession* s = _session.get();
+    _worker = std::thread([this, s, settings] {
+        try {
+#ifndef SS_BACKEND_VULKAN
+            if (!backend::device_bind())
+                throw std::runtime_error(
+                    "could not make the selected GPU current on the training "
+                    "thread; restart the application or choose another GPU");
+#endif
+            s->check_config();
+            fetch_eval_models(s->cfg);
+            s->load_dataset();
+
+            bool first = true;
+            spirula::MultiframeHooks hooks;
+            hooks.engine_ready = [this, s, &first](int frame, int index, int total) {
+                s->viewer_base_camera_size = viewer_upload_cameras(s->post);
+                viewer_upload_grid(s->post);
+                _mf_frame = frame;
+                _mf_index = index;
+                _mf_total = total;
+                {
+                    // Each frame's plots start over; the batch's own progress is the frame count.
+                    std::lock_guard<std::mutex> lk(_mu);
+                    _latest = {};
+                    _latencies.clear();
+                    _metrics.clear();
+                }
+                if (first) {
+                    first = false;
+                    _engine_ready = true;
+                    _phase = Phase::Training;
+                }
+            };
+            spirula::TrainerCallbacks cb;
+            cb.on_data_error = [this](const std::string& what) { return await_data_decision(what); };
+            cb.on_step = [this, metrics_ready = false, web = false, s](
+                             const spirula::TrainerProgress& p) mutable {
+                record_step(p, metrics_ready);
+                if (!web) {
+                    web = true;
+                    start_web_viewer(*s);
+                }
+            };
+            spirula::run_multiframe(*s, settings, hooks, cb);
             _phase = Phase::Done;
         } catch (const std::exception& e) {
             std::lock_guard<std::mutex> lk(_mu);

@@ -13,6 +13,7 @@
 //  - engine_ready() flips true after engine setup; only then may a
 //    RenderWorker attach.
 
+#include "app/MultiframeBatch.h"
 #include "app/TrainerCore.h"
 #include "app/webviewer/Viewer.h"
 
@@ -56,6 +57,14 @@ public:
     // dataparser option changes apply). Replaces the session -- the caller
     // must detach viewers from the previous one first.
     void start_training(const TrainConfig& cfg, const std::string& preset);
+
+    // Async multiframe batch (app/MultiframeBatch.h): the dataset in cfg.data
+    // is the first frame's folder. Replaces the session like start_training().
+    void start_multiframe(const TrainConfig& cfg, const std::string& preset,
+                          const spirula::MultiframeSettings& settings);
+    // The batch's current frame number, its 0-based position and its length;
+    // false when the session is not a multiframe batch.
+    bool multiframe_progress(int& frame, int& index, int& total) const;
 
     void set_paused(bool p);
     bool paused() const;
@@ -117,6 +126,9 @@ public:
 
 private:
     void push_log(const std::string& s);
+    // One finished step into the latest-progress, latency and metric history.
+    void record_step(const spirula::TrainerProgress& p, bool& metrics_ready);
+    void start_web_viewer(spirula::TrainerSession& s);
     double avg_latency_locked() const;   // caller holds _mu
     void join_worker();
     bool await_data_decision(const std::string& what);
@@ -129,6 +141,8 @@ private:
     std::thread _worker;
     std::atomic<Phase> _phase{Phase::Idle};
     std::atomic<bool> _engine_ready{false};
+    std::atomic<bool> _mf_active{false};
+    std::atomic<int> _mf_frame{0}, _mf_index{0}, _mf_total{0};
 
     std::mutex              _data_mu;
     std::condition_variable _data_cv;

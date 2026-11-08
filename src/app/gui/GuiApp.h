@@ -124,7 +124,7 @@ public:
 private:
     enum class Screen { Home, NewDataset, Train, Viewer, Batch, Mesh, MultiframeTrain };
     enum class PickAction {
-        None, OpenDataset, OpenMultiframe, SourceImages, SourceVideo, SourceDataset,
+        None, OpenDataset, OpenMultiframe, MultiframeOutput, SourceImages, SourceVideo, SourceDataset,
         SourceReplace, Workspace,
         OutputPrefix, VocabTree, MaskModelFile, SplatFile,
         PresetFile, DatasetPresetFile, MeshPresetFile, PresetSaveFolder,
@@ -264,7 +264,8 @@ private:
     // the splat viewer holding the engine, the viewport's render worker --
     // is released here, so both the Start button and the batch queue go
     // through it.
-    void launch_training(const TrainConfig& cfg, const std::string& preset);
+    void launch_training(const TrainConfig& cfg, const std::string& preset,
+                         const spirula::MultiframeSettings* multiframe = nullptr);
     bool training_busy() const;   // Preparing or Training
 
     // ---- batch ----
@@ -785,6 +786,8 @@ private:
     // The Multiframe Training window shares the trainer with Train. The flag is
     // set when a dataset is opened from its Home button; the session then stays in it.
     bool _next_open_multiframe = false;
+    spirula::MultiframeSettings _mf;
+    bool _mf_range = false;   // first/last frame chosen by hand rather than all present
     bool _multiframe_session = false;
     Screen train_screen() const {
         return _multiframe_session ? Screen::MultiframeTrain : Screen::Train;

@@ -550,44 +550,19 @@ SS_MSG(home_multiframe,
     TR("Çok kareli eğitim…"));
 
 SS_MSG(home_multiframe_help,
-    EN("Opens a dataset in the Multiframe Training window: the regular trainer "
-       "plus experimental multi-frame features, with SOG export on by default. "
-       "Open a Dataset is unchanged."),
-    JA("データセットをマルチフレーム学習ウィンドウで開きます。通常の学習機能に"
-       "実験的なマルチフレーム機能が加わり、SOG の書き出しが最初からオンになります。"
-       "「データセットを開く」は変わりません。"),
-    ZH_HANS("在多帧训练窗口中打开数据集：在常规训练器基础上增加实验性的多帧功能，"
-       "并默认开启 SOG 导出。“打开数据集”不受影响。"),
-    ZH_HANT("在多幀訓練視窗中開啟資料集：在一般訓練器的基礎上加入實驗性的多幀功能，"
-       "並預設開啟 SOG 匯出。「開啟資料集」不受影響。"),
-    KO("데이터셋을 멀티프레임 학습 창에서 엽니다. 일반 학습기에 실험적인 "
-       "멀티프레임 기능이 더해지고 SOG 내보내기가 기본으로 켜져 있습니다. "
-       "'데이터셋 열기'는 그대로입니다."),
-    DE("Öffnet einen Datensatz im Multiframe-Trainingsfenster: der gewohnte "
-       "Trainer plus experimentelle Multiframe-Funktionen, mit standardmäßig "
-       "eingeschaltetem SOG-Export. „Datensatz öffnen“ bleibt unverändert."),
-    FR("Ouvre un jeu de données dans la fenêtre d'entraînement multi-images : "
-       "l'entraîneur habituel plus des fonctions multi-images expérimentales, avec "
-       "l'export SOG activé par défaut. « Ouvrir un jeu de données » reste inchangé."),
-    ES("Abre un conjunto de datos en la ventana de entrenamiento multifotograma: "
-       "el entrenador habitual más funciones multifotograma experimentales, con la "
-       "exportación SOG activada por defecto. «Abrir un conjunto de datos» sigue igual."),
-    PT("Abre um conjunto de dados na janela de treinamento multiquadro: o "
-       "treinador habitual mais recursos multiquadro experimentais, com a exportação "
-       "SOG ativada por padrão. «Abrir um conjunto de dados» continua igual."),
-    IT("Apre un set di dati nella finestra di addestramento multiframe: "
-       "l'addestratore consueto più funzioni multiframe sperimentali, con "
-       "l'esportazione SOG attiva per impostazione predefinita. «Apri un set di dati» "
-       "resta invariato."),
-    NL("Opent een dataset in het multiframe-trainingsvenster: de gewone trainer "
-       "plus experimentele multiframe-functies, met SOG-export standaard aan. "
-       "‘Dataset openen’ blijft ongewijzigd."),
-    RU("Открывает набор данных в окне мультикадрового обучения: обычный "
-       "тренажёр плюс экспериментальные мультикадровые функции, экспорт SOG включён "
-       "по умолчанию. «Открыть набор данных» не меняется."),
-    TR("Veri kümesini çok kareli eğitim penceresinde açar: olağan eğitici "
-       "artı deneysel çok kareli özellikler; SOG dışa aktarımı varsayılan olarak "
-       "açıktır. «Veri kümesi aç» değişmez."));
+    EN("Opens the first frame's folder in the Multiframe Training window: the first frame trains normally, then each following frame refines the previous one's splats, and every frame is exported as SOG. Open a Dataset is unchanged."),
+    JA("最初のフレームのフォルダーをマルチフレーム学習ウィンドウで開きます。最初のフレームは通常どおり学習し、以降の各フレームは前のフレームのスプラットを微調整して、すべてのフレームを SOG で書き出します。「データセットを開く」は変わりません。"),
+    ZH_HANS("在多帧训练窗口中打开第一帧的文件夹：第一帧按常规训练，之后每一帧在上一帧 splat 的基础上微调，并将每一帧导出为 SOG。“打开数据集”不受影响。"),
+    ZH_HANT("在多幀訓練視窗中開啟第一幀的資料夾：第一幀依一般方式訓練，之後每一幀在上一幀 splat 的基礎上微調，並將每一幀匯出為 SOG。「開啟資料集」不受影響。"),
+    KO("첫 프레임의 폴더를 멀티프레임 학습 창에서 엽니다. 첫 프레임은 평소처럼 학습하고, 이후 각 프레임은 이전 프레임의 스플랫을 다듬으며, 모든 프레임을 SOG로 내보냅니다. '데이터셋 열기'는 그대로입니다."),
+    DE("Öffnet den Ordner des ersten Frames im Multiframe-Trainingsfenster: Der erste Frame wird normal trainiert, jeder weitere verfeinert die Splats des vorherigen, und jeder Frame wird als SOG exportiert. „Datensatz öffnen“ bleibt unverändert."),
+    FR("Ouvre le dossier de la première image dans la fenêtre d'entraînement multi-images : la première s'entraîne normalement, puis chaque image suivante affine les splats de la précédente, et chaque image est exportée en SOG. « Ouvrir un jeu de données » reste inchangé."),
+    ES("Abre la carpeta del primer fotograma en la ventana de entrenamiento multifotograma: el primero se entrena con normalidad, cada fotograma siguiente refina los splats del anterior, y cada fotograma se exporta como SOG. «Abrir un conjunto de datos» sigue igual."),
+    PT("Abre a pasta do primeiro quadro na janela de treinamento multiquadro: o primeiro treina normalmente, cada quadro seguinte refina os splats do anterior, e cada quadro é exportado como SOG. «Abrir um conjunto de dados» continua igual."),
+    IT("Apre la cartella del primo frame nella finestra di addestramento multiframe: il primo si addestra normalmente, ogni frame successivo affina gli splat del precedente e ogni frame viene esportato come SOG. «Apri un set di dati» resta invariato."),
+    NL("Opent de map van het eerste frame in het multiframe-trainingsvenster: het eerste frame traint normaal, elk volgend frame verfijnt de splats van het vorige en elk frame wordt als SOG geëxporteerd. ‘Dataset openen’ blijft ongewijzigd."),
+    RU("Открывает папку первого кадра в окне мультикадрового обучения: первый кадр обучается как обычно, каждый следующий уточняет сплаты предыдущего, и каждый кадр экспортируется в SOG. «Открыть набор данных» не меняется."),
+    TR("İlk karenin klasörünü çok kareli eğitim penceresinde açar: ilk kare normal eğitilir, sonraki her kare öncekinin splat'lerini inceltir ve her kare SOG olarak dışa aktarılır. «Veri kümesi aç» değişmez."));
 
 SS_MSG(multiframe_title,
     EN("Multiframe Training"),
@@ -604,25 +579,185 @@ SS_MSG(multiframe_title,
     RU("Мультикадровое обучение"),
     TR("Çok kareli eğitim"));
 
-SS_MSG(multiframe_sog_note,
-    EN("splat.ply is still saved next to the .sog so the two can be compared."),
-    JA("比較できるよう、.sog の隣に splat.ply も引き続き保存されます。"),
-    ZH_HANS("仍会在 .sog 旁保存 splat.ply，方便对比两者。"),
-    ZH_HANT("仍會在 .sog 旁儲存 splat.ply，方便比較兩者。"),
-    KO("비교할 수 있도록 .sog 옆에 splat.ply도 계속 저장됩니다."),
-    DE("splat.ply wird weiterhin neben der .sog gespeichert, damit sich beide "
-       "vergleichen lassen."),
-    FR("splat.ply reste enregistré à côté du .sog pour pouvoir comparer les deux."),
-    ES("splat.ply se sigue guardando junto al .sog para poder comparar ambos."),
-    PT("O splat.ply continua sendo salvo ao lado do .sog para que os dois possam "
-       "ser comparados."),
-    IT("splat.ply viene ancora salvato accanto al .sog per poter confrontare i due."),
-    NL("splat.ply wordt nog steeds naast de .sog opgeslagen, zodat je beide kunt "
-       "vergelijken."),
-    RU("splat.ply по-прежнему сохраняется рядом с .sog, чтобы их можно было "
-       "сравнить."),
-    TR("İkisini karşılaştırabilmek için splat.ply, .sog dosyasının yanına yine "
-       "kaydedilir."));
+SS_MSG(mf_range,
+    EN("Choose first and last frame"),
+    JA("最初と最後のフレームを指定"),
+    ZH_HANS("指定起止帧"),
+    ZH_HANT("指定起訖幀"),
+    KO("시작·끝 프레임 지정"),
+    DE("Ersten und letzten Frame wählen"),
+    FR("Choisir la première et la dernière image"),
+    ES("Elegir primer y último fotograma"),
+    PT("Escolher primeiro e último quadro"),
+    IT("Scegli primo e ultimo frame"),
+    NL("Eerste en laatste frame kiezen"),
+    RU("Выбрать первый и последний кадр"),
+    TR("İlk ve son kareyi seç"));
+
+SS_MSG(mf_range_help,
+    EN("Off: every consecutively numbered folder from the opened one onward. On: exactly these frames, and a missing folder stops the batch."),
+    JA("オフ: 開いたフォルダー以降の連番のフォルダーをすべて処理します。オン: 指定したフレームだけを処理し、フォルダーが見つからない場合はバッチを停止します。"),
+    ZH_HANS("关闭：处理从当前打开的文件夹起所有连续编号的文件夹。开启：只处理指定的这些帧，缺少文件夹时批处理会停止。"),
+    ZH_HANT("關閉：處理從目前開啟的資料夾起所有連續編號的資料夾。開啟：只處理指定的這些幀，缺少資料夾時批次會停止。"),
+    KO("끄면 연 폴더부터 연속 번호가 붙은 모든 폴더를 처리합니다. 켜면 지정한 프레임만 처리하며, 폴더가 없으면 배치가 중지됩니다."),
+    DE("Aus: jeder fortlaufend nummerierte Ordner ab dem geöffneten. An: genau diese Frames, und ein fehlender Ordner stoppt den Stapel."),
+    FR("Désactivé : tous les dossiers numérotés consécutivement à partir de celui ouvert. Activé : exactement ces images, et un dossier manquant arrête le lot."),
+    ES("Desactivado: todas las carpetas numeradas consecutivamente desde la abierta. Activado: exactamente estos fotogramas, y una carpeta ausente detiene el lote."),
+    PT("Desligado: todas as pastas numeradas em sequência a partir da aberta. Ligado: exatamente estes quadros, e uma pasta ausente interrompe o lote."),
+    IT("Disattivato: tutte le cartelle numerate in sequenza a partire da quella aperta. Attivato: esattamente questi frame, e una cartella mancante ferma il batch."),
+    NL("Uit: elke opeenvolgend genummerde map vanaf de geopende. Aan: precies deze frames, en een ontbrekende map stopt de batch."),
+    RU("Выкл.: все подряд пронумерованные папки, начиная с открытой. Вкл.: ровно эти кадры, а отсутствующая папка останавливает пакет."),
+    TR("Kapalı: açılan klasörden itibaren ardışık numaralı tüm klasörler. Açık: tam olarak bu kareler; eksik bir klasör toplu işi durdurur."));
+
+SS_MSG(mf_first,
+    EN("First frame"),
+    JA("最初のフレーム"),
+    ZH_HANS("起始帧"),
+    ZH_HANT("起始幀"),
+    KO("시작 프레임"),
+    DE("Erster Frame"),
+    FR("Première image"),
+    ES("Primer fotograma"),
+    PT("Primeiro quadro"),
+    IT("Primo frame"),
+    NL("Eerste frame"),
+    RU("Первый кадр"),
+    TR("İlk kare"));
+
+SS_MSG(mf_last,
+    EN("Last frame"),
+    JA("最後のフレーム"),
+    ZH_HANS("结束帧"),
+    ZH_HANT("結束幀"),
+    KO("끝 프레임"),
+    DE("Letzter Frame"),
+    FR("Dernière image"),
+    ES("Último fotograma"),
+    PT("Último quadro"),
+    IT("Ultimo frame"),
+    NL("Laatste frame"),
+    RU("Последний кадр"),
+    TR("Son kare"));
+
+SS_MSG(mf_iterations,
+    EN("Iterations per frame"),
+    JA("フレームあたりの反復回数"),
+    ZH_HANS("每帧迭代次数"),
+    ZH_HANT("每幀迭代次數"),
+    KO("프레임당 반복 횟수"),
+    DE("Iterationen pro Frame"),
+    FR("Itérations par image"),
+    ES("Iteraciones por fotograma"),
+    PT("Iterações por quadro"),
+    IT("Iterazioni per frame"),
+    NL("Iteraties per frame"),
+    RU("Итераций на кадр"),
+    TR("Kare başına yineleme"));
+
+SS_MSG(mf_iterations_help,
+    EN("Training steps for each frame after the first. The first frame trains with the normal settings and iteration count."),
+    JA("最初のフレーム以降の各フレームの学習ステップ数です。最初のフレームは通常の設定と反復回数で学習します。"),
+    ZH_HANS("第一帧之后每一帧的训练步数。第一帧按常规设置和迭代次数训练。"),
+    ZH_HANT("第一幀之後每一幀的訓練步數。第一幀依一般設定和迭代次數訓練。"),
+    KO("첫 프레임 이후 각 프레임의 학습 단계 수입니다. 첫 프레임은 일반 설정과 반복 횟수로 학습합니다."),
+    DE("Trainingsschritte für jeden Frame nach dem ersten. Der erste Frame trainiert mit den normalen Einstellungen und Iterationen."),
+    FR("Étapes d'entraînement pour chaque image après la première. La première s'entraîne avec les réglages et le nombre d'itérations habituels."),
+    ES("Pasos de entrenamiento de cada fotograma después del primero. El primero se entrena con los ajustes y el número de iteraciones normales."),
+    PT("Passos de treinamento de cada quadro depois do primeiro. O primeiro treina com as configurações e o número de iterações normais."),
+    IT("Passi di addestramento per ogni frame dopo il primo. Il primo si addestra con le impostazioni e il numero di iterazioni normali."),
+    NL("Trainingsstappen voor elk frame na het eerste. Het eerste frame traint met de normale instellingen en het normale aantal iteraties."),
+    RU("Шагов обучения для каждого кадра после первого. Первый кадр обучается с обычными настройками и числом итераций."),
+    TR("İlkinden sonraki her kare için eğitim adımı sayısı. İlk kare normal ayarlar ve yineleme sayısıyla eğitilir."));
+
+SS_MSG(mf_lr_scale,
+    EN("Learning-rate scale"),
+    JA("学習率の倍率"),
+    ZH_HANS("学习率倍数"),
+    ZH_HANT("學習率倍數"),
+    KO("학습률 배율"),
+    DE("Lernraten-Faktor"),
+    FR("Facteur de taux d'apprentissage"),
+    ES("Factor de tasa de aprendizaje"),
+    PT("Fator da taxa de aprendizado"),
+    IT("Fattore del learning rate"),
+    NL("Leersnelheidsfactor"),
+    RU("Множитель скорости обучения"),
+    TR("Öğrenme hızı çarpanı"));
+
+SS_MSG(mf_lr_scale_help,
+    EN("Multiplies the normal learning rates for every frame after the first and holds them constant instead of decaying them."),
+    JA("最初のフレーム以降のすべてのフレームで、通常の学習率に掛ける倍率です。学習率は減衰させず一定に保ちます。"),
+    ZH_HANS("对第一帧之后的所有帧，将常规学习率乘以该倍数，并保持恒定而不衰减。"),
+    ZH_HANT("對第一幀之後的所有幀，將一般學習率乘以該倍數，並保持恆定而不衰減。"),
+    KO("첫 프레임 이후 모든 프레임에서 일반 학습률에 곱하는 배율이며, 학습률은 감소시키지 않고 일정하게 유지합니다."),
+    DE("Multipliziert die normalen Lernraten für jeden Frame nach dem ersten und hält sie konstant, statt sie abklingen zu lassen."),
+    FR("Multiplie les taux d'apprentissage habituels pour chaque image après la première et les maintient constants au lieu de les faire décroître."),
+    ES("Multiplica las tasas de aprendizaje normales en cada fotograma después del primero y las mantiene constantes en lugar de reducirlas."),
+    PT("Multiplica as taxas de aprendizado normais em cada quadro depois do primeiro e as mantém constantes em vez de reduzi-las."),
+    IT("Moltiplica i learning rate normali per ogni frame dopo il primo e li mantiene costanti invece di farli decadere."),
+    NL("Vermenigvuldigt de normale leersnelheden voor elk frame na het eerste en houdt ze constant in plaats van ze te laten afnemen."),
+    RU("Умножает обычные скорости обучения для каждого кадра после первого и держит их постоянными, а не уменьшает."),
+    TR("İlkinden sonraki her karede normal öğrenme hızlarını çarpar ve azaltmak yerine sabit tutar."));
+
+SS_MSG(mf_output_hint,
+    EN("default: <frames folder>/multiframe_out"),
+    JA("既定: <フレームのフォルダー>/multiframe_out"),
+    ZH_HANS("默认：<帧文件夹>/multiframe_out"),
+    ZH_HANT("預設：<幀資料夾>/multiframe_out"),
+    KO("기본값: <프레임 폴더>/multiframe_out"),
+    DE("Standard: <Frame-Ordner>/multiframe_out"),
+    FR("par défaut : <dossier des images>/multiframe_out"),
+    ES("predeterminado: <carpeta de fotogramas>/multiframe_out"),
+    PT("padrão: <pasta dos quadros>/multiframe_out"),
+    IT("predefinito: <cartella dei frame>/multiframe_out"),
+    NL("standaard: <framemap>/multiframe_out"),
+    RU("по умолчанию: <папка кадров>/multiframe_out"),
+    TR("varsayılan: <kare klasörü>/multiframe_out"));
+
+SS_MSG(mf_output_help,
+    EN("Every frame's SOG goes in sog/ and its PLY in ply/ inside this folder. The PLYs let a batch be resumed or a section retrained."),
+    JA("各フレームの SOG はこのフォルダー内の sog/ に、PLY は ply/ に保存されます。PLY があれば、バッチの再開や一部区間の再学習ができます。"),
+    ZH_HANS("每一帧的 SOG 保存到此文件夹内的 sog/，PLY 保存到 ply/。有了 PLY，就可以恢复批处理或重新训练某一段。"),
+    ZH_HANT("每一幀的 SOG 儲存到此資料夾內的 sog/，PLY 儲存到 ply/。有了 PLY，就能恢復批次或重新訓練某一段。"),
+    KO("각 프레임의 SOG는 이 폴더 안의 sog/에, PLY는 ply/에 저장됩니다. PLY가 있으면 배치를 이어서 하거나 일부 구간을 다시 학습할 수 있습니다."),
+    DE("Das SOG jedes Frames landet in sog/, das PLY in ply/ innerhalb dieses Ordners. Mit den PLYs lässt sich ein Stapel fortsetzen oder ein Abschnitt neu trainieren."),
+    FR("Le SOG de chaque image va dans sog/ et son PLY dans ply/, à l'intérieur de ce dossier. Les PLY permettent de reprendre un lot ou de réentraîner une section."),
+    ES("El SOG de cada fotograma va a sog/ y su PLY a ply/, dentro de esta carpeta. Los PLY permiten reanudar un lote o reentrenar un tramo."),
+    PT("O SOG de cada quadro vai para sog/ e o PLY para ply/, dentro desta pasta. Os PLY permitem retomar um lote ou retreinar um trecho."),
+    IT("Il SOG di ogni frame va in sog/ e il PLY in ply/, dentro questa cartella. I PLY permettono di riprendere un batch o riaddestrare una sezione."),
+    NL("De SOG van elk frame komt in sog/ en de PLY in ply/, binnen deze map. Met de PLY's kun je een batch hervatten of een deel opnieuw trainen."),
+    RU("SOG каждого кадра сохраняется в sog/, а PLY — в ply/ внутри этой папки. PLY позволяют возобновить пакет или переобучить участок."),
+    TR("Her karenin SOG dosyası bu klasördeki sog/ içine, PLY dosyası ply/ içine gider. PLY dosyaları bir toplu işi sürdürmeye veya bir bölümü yeniden eğitmeye yarar."));
+
+SS_MSG(mf_frozen_note,
+    EN("After the first frame the splat count is frozen: no densification, pruning or relocation."),
+    JA("最初のフレームの後はスプラット数が固定されます。密度化、削除、再配置は行われません。"),
+    ZH_HANS("第一帧之后 splat 数量保持不变：不再增密、剪枝或重定位。"),
+    ZH_HANT("第一幀之後 splat 數量保持不變：不再增密、修剪或重新定位。"),
+    KO("첫 프레임 이후에는 스플랫 수가 고정됩니다. 밀도 증가, 가지치기, 재배치는 하지 않습니다."),
+    DE("Nach dem ersten Frame ist die Splat-Anzahl fixiert: keine Verdichtung, kein Beschneiden, keine Umverteilung."),
+    FR("Après la première image, le nombre de splats est figé : ni densification, ni élagage, ni relocalisation."),
+    ES("Tras el primer fotograma, el número de splats queda fijo: sin densificación, poda ni reubicación."),
+    PT("Depois do primeiro quadro, o número de splats fica fixo: sem densificação, poda nem realocação."),
+    IT("Dopo il primo frame il numero di splat è fissato: niente densificazione, potatura o riposizionamento."),
+    NL("Na het eerste frame ligt het aantal splats vast: geen verdichting, snoeien of verplaatsen."),
+    RU("После первого кадра число сплатов фиксируется: без уплотнения, прореживания и перемещения."),
+    TR("İlk kareden sonra splat sayısı sabitlenir: yoğunlaştırma, budama veya yeniden konumlandırma yapılmaz."));
+
+SS_MSG(mf_progress,
+    EN("Frame {0} ({1} of {2})"),
+    JA("フレーム {0}（{1}/{2}）"),
+    ZH_HANS("第 {0} 帧（{1}/{2}）"),
+    ZH_HANT("第 {0} 幀（{1}/{2}）"),
+    KO("프레임 {0}({1}/{2})"),
+    DE("Frame {0} ({1} von {2})"),
+    FR("Image {0} ({1} sur {2})"),
+    ES("Fotograma {0} ({1} de {2})"),
+    PT("Quadro {0} ({1} de {2})"),
+    IT("Frame {0} ({1} di {2})"),
+    NL("Frame {0} ({1} van {2})"),
+    RU("Кадр {0} ({1} из {2})"),
+    TR("Kare {0} ({1} / {2})"));
 
 SS_MSG(home_new_dataset,
     EN("Create Dataset from Photos or Video..."),
