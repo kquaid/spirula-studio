@@ -43,6 +43,7 @@
 #include "app/gui/TelemetryProbe.h"
 #include "app/gui/TrainPreset.h"
 #include "app/gui/TrainRunner.h"
+#include "app/gui/MultiframeTrainPanel.h"
 #include "app/gui/ViewportPanel.h"
 #include "data/PointCloudFile.h"
 #ifdef SS_BUILD_SAM
@@ -64,7 +65,7 @@
 
 namespace gui {
 
-// One kind of saved preset as the screen sees it: what is on disk, which one
+// One kind of saved preset as the  sees it: what is on disk, which one
 // is in use, and what the last save or load said. `file` is "" while the
 // built-in (or stock) settings are selected.
 template <class T>
@@ -98,8 +99,8 @@ public:
     // playing back or being written -- so frames must keep coming.
     bool animating() const { return _compare.animating() || _mask_editor.animating() || _source_view.animating(); }
 
-    // What a script needs to know that is not on screen as a widget: the
-    // screen, what is running, what is open. A JSON object body without the
+    // What a script needs to know that is not on  as a widget: the
+    // , what is running, what is open. A JSON object body without the
     // braces, for gui::automation::set_state_source.
     std::string state_json();
 
@@ -122,7 +123,7 @@ public:
     void set_dpi_scale(float s) { _scale.set_dpi(s); }
 
 private:
-    enum class Screen { Home, NewDataset, Train, Viewer, Batch, Mesh };
+    enum class Screen { Home, NewDataset, Train, MultiframeTrain, Viewer, Batch, Mesh };
     enum class PickAction {
         None, OpenDataset, SourceImages, SourceVideo, SourceDataset,
         SourceReplace, Workspace,
@@ -808,6 +809,7 @@ private:
     enum class PlotMetric { Psnr, Ssim, Loss, LogLoss };
     PlotMetric _plot_metric = PlotMetric::Psnr;
     ViewportPanel _viewport;
+    MultiframeTrainPanel _multiframe_train_panel;
     // The trainer screen's other preview: one training photograph beside the
     // render of the same camera. Reads from the session's engine, so it is
     // released together with the viewport (detach_session_views).
