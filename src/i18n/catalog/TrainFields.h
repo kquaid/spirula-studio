@@ -430,6 +430,63 @@ SS_MSG(save_full_checkpoint_help,
        "çalışma o noktadan sürdürülebilir. Sürdürülebilir denetim noktaları her "
        "splat yuvasını ve iyileştirici durumunu taşıdığı için çok daha büyüktür."));
 
+SS_MSG(save_sog,
+    EN("Export SOG"), JA("SOG を書き出す"), ZH_HANS("导出 SOG"),
+    ZH_HANT("匯出 SOG"), KO("SOG 내보내기"), DE("SOG exportieren"),
+    FR("Exporter en SOG"), ES("Exportar SOG"), PT("Exportar SOG"),
+    IT("Esporta SOG"), NL("SOG exporteren"), RU("Экспортировать SOG"),
+    TR("SOG olarak dışa aktar"));
+SS_MSG(save_sog_help,
+    EN("When training ends, also write the model as a compressed SOG file "
+       "(splat.sog) next to splat.ply. SOG is typically 15 to 20 times smaller and "
+       "opens in PlayCanvas viewers. It costs extra CPU time at the end of the run, "
+       "and spherical-beta lobes are not stored."),
+    JA("学習の終了時に、splat.ply の隣に圧縮形式の SOG ファイル (splat.sog) も書き出します。"
+       "SOG は通常 15～20 分の 1 の大きさで、PlayCanvas のビューアで開けます。"
+       "実行の最後に CPU の処理時間が余分にかかり、spherical-beta ローブは保存されません。"),
+    ZH_HANS("训练结束时，除 splat.ply 外，还会在旁边写出压缩的 SOG 文件 (splat.sog)。"
+       "SOG 通常只有 PLY 的十五到二十分之一大小，可在 PlayCanvas 查看器中打开。"
+       "运行结束时会多占用一些 CPU 时间，且不保存 spherical-beta 波瓣。"),
+    ZH_HANT("訓練結束時，除 splat.ply 外，還會在旁邊寫出壓縮的 SOG 檔案 (splat.sog)。"
+       "SOG 通常只有 PLY 的十五到二十分之一大小，可在 PlayCanvas 檢視器中開啟。"
+       "執行結束時會多佔用一些 CPU 時間，且不儲存 spherical-beta 波瓣。"),
+    KO("학습이 끝나면 splat.ply 옆에 압축된 SOG 파일(splat.sog)도 함께 씁니다. "
+       "SOG는 보통 15~20배 작으며 PlayCanvas 뷰어에서 열 수 있습니다. "
+       "실행 마지막에 CPU 시간이 추가로 들고, spherical-beta 로브는 저장되지 않습니다."),
+    DE("Schreibt am Ende des Trainings neben splat.ply auch eine komprimierte "
+       "SOG-Datei (splat.sog). SOG ist meist 15- bis 20-mal kleiner und lässt sich in "
+       "PlayCanvas-Viewern öffnen. Das kostet am Ende des Laufs zusätzliche CPU-Zeit; "
+       "Spherical-Beta-Keulen werden nicht gespeichert."),
+    FR("À la fin de l'entraînement, écrit aussi le modèle en fichier SOG "
+       "compressé (splat.sog) à côté de splat.ply. Un SOG est en général 15 à 20 fois "
+       "plus petit et s'ouvre dans les visionneuses PlayCanvas. Cela demande du temps "
+       "processeur supplémentaire en fin d'exécution, et les lobes spherical-beta ne "
+       "sont pas conservés."),
+    ES("Al terminar el entrenamiento, escribe también el modelo como archivo SOG "
+       "comprimido (splat.sog) junto a splat.ply. Un SOG suele ser entre 15 y 20 veces "
+       "más pequeño y se abre en los visores de PlayCanvas. Cuesta tiempo de CPU extra "
+       "al final de la ejecución, y los lóbulos spherical-beta no se guardan."),
+    PT("Ao terminar o treinamento, grava também o modelo como arquivo SOG "
+       "comprimido (splat.sog) ao lado de splat.ply. Um SOG costuma ser de 15 a 20 "
+       "vezes menor e abre nos visualizadores do PlayCanvas. Custa tempo extra de CPU "
+       "no fim da execução, e os lóbulos spherical-beta não são guardados."),
+    IT("Al termine dell'addestramento scrive anche il modello come file SOG "
+       "compresso (splat.sog) accanto a splat.ply. Un SOG è in genere da 15 a 20 volte "
+       "più piccolo e si apre nei visualizzatori PlayCanvas. Richiede tempo CPU "
+       "aggiuntivo a fine esecuzione e i lobi spherical-beta non vengono salvati."),
+    NL("Schrijft aan het einde van de training naast splat.ply ook een "
+       "gecomprimeerd SOG-bestand (splat.sog). SOG is meestal 15 tot 20 keer kleiner en "
+       "opent in PlayCanvas-viewers. Het kost extra CPU-tijd aan het einde van de run, "
+       "en spherical-beta-lobben worden niet opgeslagen."),
+    RU("По окончании обучения записывает модель ещё и как сжатый файл SOG "
+       "(splat.sog) рядом с splat.ply. SOG обычно в 15–20 раз меньше и открывается в "
+       "просмотрщиках PlayCanvas. Это требует дополнительного времени процессора в "
+       "конце запуска, а доли spherical-beta не сохраняются."),
+    TR("Eğitim bittiğinde modeli splat.ply'nin yanına sıkıştırılmış bir SOG "
+       "dosyası (splat.sog) olarak da yazar. SOG genellikle 15 ila 20 kat daha küçüktür "
+       "ve PlayCanvas görüntüleyicilerinde açılır. Çalıştırmanın sonunda ek işlemci "
+       "süresi harcar; spherical-beta lobları saklanmaz."));
+
 SS_MSG(save_eval_images,
     EN("Save evaluation images"), JA("評価用画像を保存"),
     ZH_HANS("保存评估图像"), ZH_HANT("儲存評估影像"), KO("평가 이미지 저장"),

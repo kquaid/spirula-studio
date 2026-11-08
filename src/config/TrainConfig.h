@@ -112,6 +112,7 @@ inline bool train_choice_valid(const std::string& value, const char* choices) {
     X(int, steps_per_save, 2000, "run", "advanced", "")                      \
     X(bool, save_only_latest_checkpoint, true, "run", "advanced", "")        \
     X(bool, save_full_checkpoint, false, "run", "advanced", "")              \
+    X(bool, save_sog, false, "run", "advanced", "")                          \
     X(bool, save_eval_images, false, "run", "advanced", "")                  \
     X(bool, eval_lpips, true, "run", "advanced", "")                         \
     X(std::string, lpips_checkpoints, "", "run", "advanced", "<folder>")     \

@@ -874,6 +874,7 @@ void GuiApp::apply_preset(const std::string& preset) {
     // re-enabled in Basic Options for remote monitoring.
     fresh.disable_viewer = true;
     fresh.save_full_checkpoint = _keep_full_ckpt;
+    fresh.save_sog = _multiframe_session;
     _preset = preset;
     _train_presets.file.clear();
     _train_presets.display.clear();
@@ -908,6 +909,7 @@ void GuiApp::apply_user_preset(const TrainPreset& p) {
     if (fresh.mask_dir == stock.mask_dir) fresh.mask_dir = _cfg.mask_dir;
     fresh.disable_viewer = true;   // as apply_preset: the native viewport
     fresh.save_full_checkpoint = p.cfg.save_full_checkpoint || _keep_full_ckpt;
+    fresh.save_sog = p.cfg.save_sog || _multiframe_session;
 
     _preset = p.base;
     _train_presets.file = p.path;
@@ -1158,6 +1160,7 @@ void GuiApp::load_mesh_preset_file(const std::string& path) {
 void GuiApp::open_dataset(std::string dir, std::string image_dir,
                           std::string mask_dir, bool mask_flipped,
                           bool keep_log) {
+    const bool multiframe = std::exchange(_next_open_multiframe, false);
     if (dir.empty() || native_work_busy()) return;
     app::set_crash_note("opening dataset " + dir);
     close_native_previews();
@@ -1215,8 +1218,13 @@ void GuiApp::open_dataset(std::string dir, std::string image_dir,
     reset_dataset_preview();
     close_source_preview();
     _parse_dirty = false;
+    // Switching windows switches the SOG default with it; nothing else moves.
+    if (multiframe != _multiframe_session) {
+        _multiframe_session = multiframe;
+        _cfg.save_sog = _defaults.save_sog = multiframe;
+    }
     _runner.load_dataset(_cfg, _preset);
-    _screen = Screen::Train;
+    _screen = train_screen();
 }
 
 void GuiApp::open_edited_dataset() {
@@ -1460,6 +1468,7 @@ void GuiApp::run_pending_if_stopped() {
     // busy); a dismissed modal must not leave a delayed action armed.
     if (!_stop_confirmed) {
         _pending = Pending::None;
+        _next_open_multiframe = false;
         _render_project_after_open.clear();
         return;
     }
@@ -2122,7 +2131,7 @@ void GuiApp::follow_batch_screen(BatchStage stage) {
     if (_screen == Screen::Batch || _screen == Screen::Viewer) return;
     switch (stage) {
         case BatchStage::Dataset: _screen = Screen::NewDataset; break;
-        case BatchStage::Train:   _screen = Screen::Train; break;
+        case BatchStage::Train:   _multiframe_session = false; _screen = Screen::Train; break;
         case BatchStage::Mesh:    _screen = Screen::Mesh; break;
         case BatchStage::Merge:   _screen = Screen::Batch; break;
     }
@@ -2314,7 +2323,7 @@ void GuiApp::handle_drop(const std::vector<std::string>& paths) {
         if (kind == PresetKind::Train && is_preset_file(paths[0])) {
             load_preset_file(paths[0]);
             if (!_train_presets.msg_err && !_cfg.data.empty())
-                _screen = Screen::Train;
+                _screen = train_screen();
             return;
         }
     }
@@ -2998,6 +3007,7 @@ void GuiApp::adopt_file_color_space() {
 const char* GuiApp::dir_key(PickAction a, FileDialog::Mode m) {
     switch (a) {
         case PickAction::OpenDataset:
+        case PickAction::OpenMultiframe:
         case PickAction::BatchDataset:
         case PickAction::SourceDataset:
         case PickAction::MeshPhotos:        return "dataset";
@@ -3071,6 +3081,11 @@ void GuiApp::handle_dialog_result(const std::vector<std::string>& paths) {
     remember_dir(_pick_key, path);
     switch (_pick) {
         case PickAction::OpenDataset:
+            _next_open_multiframe = false;
+            request_open_dataset(path);
+            break;
+        case PickAction::OpenMultiframe:
+            _next_open_multiframe = true;
             request_open_dataset(path);
             break;
         case PickAction::ResumeRun:
@@ -3550,6 +3565,7 @@ void GuiApp::frame() {
         case Screen::Home:   draw_home();   break;
         case Screen::NewDataset: draw_new_dataset(); break;
         case Screen::Train:  draw_train();  break;
+        case Screen::MultiframeTrain: draw_multiframe_train(); break;
         case Screen::Viewer: draw_viewer(); break;
         case Screen::Batch:  draw_batch();  break;
         case Screen::Mesh:   draw_mesh();   break;
@@ -3956,7 +3972,7 @@ void GuiApp::draw_home() {
         if (ui::Button(training_busy() ? msg::home_back_to_training
                                        : msg::home_back_to_trainer,
                        ImVec2(-1, bh)))
-            _screen = Screen::Train;
+            _screen = train_screen();
         ImGui::Dummy(ImVec2(0, px(10.0f)));
     }
 
@@ -3965,6 +3981,11 @@ void GuiApp::draw_home() {
                   FileDialog::Mode::Folder);
     }
     ui::help_on_hover(msg::home_open_dataset_help);
+    if (ui::Button(msg::home_multiframe, ImVec2(-1, bh))) {
+        open_pick(PickAction::OpenMultiframe, msg::home_multiframe.get(),
+                  FileDialog::Mode::Folder);
+    }
+    ui::help_on_hover(msg::home_multiframe_help);
     // Only runs saved with full checkpoints can resume; File menu still has it.
     if (_keep_full_ckpt) {
         ImGui::BeginDisabled(native_work_busy() || training_busy());
@@ -4595,6 +4616,7 @@ void GuiApp::advance_dataset_training() {
     remember(RecentKind::Dataset, cfg.data);
     reset_dataset_preview();
     close_source_preview();
+    _multiframe_session = false;
     _screen = Screen::Train;
     launch_training(_cfg, _preset);
 }
@@ -9339,6 +9361,117 @@ void GuiApp::draw_train() {
 }
 
 
+
+void GuiApp::draw_multiframe_train() {
+    bool preparing = _runner.phase() == TrainRunner::Phase::Preparing;
+    ImGui::BeginDisabled(preparing);   // no clean interruption point
+    if (ui::Button(msg::back_home)) request_go_home();
+    ImGui::EndDisabled();
+    if (training_busy()) ui::help_on_hover(msg::leaving_stops_training);
+    ImGui::SameLine();
+    ui::TextColored(kDim, msg::multiframe_title);
+    ImGui::SameLine();
+    if (_batch_active) {
+        if (ui::Button(msg::batch_show_list)) _screen = Screen::Batch;
+        ImGui::SameLine();
+        const BatchRow* row = batch_running_row();
+        ui::TextDisabledRaw(row ? row->dataset : std::string());
+    } else {
+        ui::TextDisabledRaw(_cfg.data);
+        // Offered when the dataset's mask folder exists; probed at most once
+        // a second, as workspace_state() does.
+        const std::string key = _cfg.data + "\n" + _cfg.mask_dir;
+        const double now = ImGui::GetTime();
+        if (key != _train_masks_key || now - _train_masks_at > 1.0) {
+            std::error_code ec;
+            fs::path md(_cfg.mask_dir);
+            if (md.is_relative()) md = fs::path(_cfg.data) / md;
+            _train_masks_key = key;
+            _train_masks_at = now;
+            _train_has_masks = !_cfg.data.empty() && fs::is_directory(md, ec) && !fs::is_empty(md, ec);
+        }
+        if (_train_has_masks) {
+            ImGui::SameLine();
+            ImGui::BeginDisabled(training_busy() || native_work_busy());
+            if (ui::Button(mmsg::correct_masks)) {
+                fs::path id(_cfg.image_dir), md(_cfg.mask_dir);
+                if (id.is_relative()) id = fs::path(_cfg.data) / id;
+                if (md.is_relative()) md = fs::path(_cfg.data) / md;
+                open_mask_editor(_cfg.data, id.string(), md.string(), _cfg.flip_mask);
+            }
+            ImGui::EndDisabled();
+            ui::help_on_hover(mmsg::correct_masks_help);
+        }
+    }
+    // Two ways to watch a run: the scene in 3D, or one training photograph
+    // beside the render of the same camera. Right-aligned on the header row so
+    // it costs the preview below no height.
+    {
+        const float w = px(160.0f);
+        draw_screenshot_controls(w);
+        ImGui::SameLine(std::max(0.0f, ImGui::GetContentRegionMax().x - w));
+        ImGui::SetNextItemWidth(w);
+        int mode = _preview_images ? 1 : 0;
+        if (ui::ComboRaw("##previewmode", &mode,
+                         {&msg::preview_mode_3d, &msg::preview_mode_images}))
+            _preview_images = mode == 1;
+        ui::help_on_hover(msg::preview_mode_help);
+    }
+
+    draw_device_issue_banner();
+
+    const float body_avail = ImGui::GetContentRegionAvail().y;
+    if (_show_settings) {
+        // Never more than 45% of the window: the viewport is the point of the
+        // screen, and a settings column sized for a 1600 px window swallows a
+        // 1100 px one.
+        const float w = std::clamp(_panel_w * ui_scale(), px(220.0f),
+                                   std::max(px(220.0f),
+                                            ImGui::GetContentRegionAvail().x * 0.45f));
+        ImGui::BeginChild("##settings", ImVec2(w, 0), ImGuiChildFlags_Borders);
+        draw_multiframe_panel();
+        draw_train_settings();
+        ImGui::EndChild();
+        float dragged = w;
+        if (splitter_v("##panelsplit", &dragged, px(220.0f),
+                       ImGui::GetWindowWidth() * 0.7f, body_avail)) {
+            _panel_w = dragged / ui_scale();
+            _layout_dirty = true;
+        }
+    }
+
+    ImGui::BeginGroup();
+    float status_h = ImGui::GetFrameHeightWithSpacing() +
+                     ImGui::GetTextLineHeightWithSpacing() + px(10.0f);
+    float spacing = ImGui::GetStyle().ItemSpacing.y;
+    float log_h = log_height(body_avail - status_h - spacing);
+    float vp_h = -(log_h + (log_h > 0 ? splitter_extent() : 0) + status_h + spacing);
+    ImGui::BeginChild("##viewport", ImVec2(0, vp_h), ImGuiChildFlags_Borders);
+    const bool stepping = _runner.phase() == TrainRunner::Phase::Training;
+    // The step both previews pace their refresh by while nobody is steering.
+    const int step = stepping ? _runner.latest_progress().step : -1;
+    // The images view's textures are ~0.7 GB at 60 MP; hidden, training can have them.
+    if (_preview_images) _images.draw(stepping, step);
+    else                 { _images.destroy_gl(); _viewport.draw(stepping, step); }
+    ImGui::EndChild();
+    draw_status_strip();
+    draw_log_panel(log_h);
+    ImGui::EndGroup();
+}
+
+// What the Multiframe Training window adds above the shared settings. The
+// rest of the screen is draw_train()'s, so the two stay comparable.
+void GuiApp::draw_multiframe_panel() {
+    ui::SeparatorText(msg::multiframe_title);
+    ImGui::BeginDisabled(training_busy());
+    ui::Checkbox(fld::save_sog, &_cfg.save_sog);
+    ImGui::EndDisabled();
+    ui::help_on_hover(fld::save_sog_help);
+    ui::TextDisabledWrapped(msg::multiframe_sog_note);
+    ImGui::Spacing();
+}
+
+
 // ===========================================================================
 // Viewer screen
 //
@@ -11146,7 +11279,7 @@ void GuiApp::draw_batch_progress() {
                 case BatchStage::Dataset: _screen = Screen::NewDataset; break;
                 case BatchStage::Mesh:    _screen = Screen::Mesh; break;
                 case BatchStage::Merge:   break;
-                default:                  _screen = Screen::Train; break;
+                default:                  _multiframe_session = false; _screen = Screen::Train; break;
             }
         }
     } else if (ui::Button(msg::batch_show_list, ImVec2(-8, 0))) {

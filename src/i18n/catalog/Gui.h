@@ -534,6 +534,96 @@ SS_MSG(home_open_dataset_help,
        "(sparse/0), Nerfstudio (transforms.json) veya Metashape dışa "
        "aktarımları. Biçim kendiliğinden algılanır."));
 
+SS_MSG(home_multiframe,
+    EN("Multiframe Training..."),
+    JA("マルチフレーム学習…"),
+    ZH_HANS("多帧训练…"),
+    ZH_HANT("多幀訓練…"),
+    KO("멀티프레임 학습…"),
+    DE("Multiframe-Training …"),
+    FR("Entraînement multi-images…"),
+    ES("Entrenamiento multifotograma…"),
+    PT("Treinamento multiquadro…"),
+    IT("Addestramento multiframe…"),
+    NL("Multiframe-training…"),
+    RU("Мультикадровое обучение…"),
+    TR("Çok kareli eğitim…"));
+
+SS_MSG(home_multiframe_help,
+    EN("Opens a dataset in the Multiframe Training window: the regular trainer "
+       "plus experimental multi-frame features, with SOG export on by default. "
+       "Open a Dataset is unchanged."),
+    JA("データセットをマルチフレーム学習ウィンドウで開きます。通常の学習機能に"
+       "実験的なマルチフレーム機能が加わり、SOG の書き出しが最初からオンになります。"
+       "「データセットを開く」は変わりません。"),
+    ZH_HANS("在多帧训练窗口中打开数据集：在常规训练器基础上增加实验性的多帧功能，"
+       "并默认开启 SOG 导出。“打开数据集”不受影响。"),
+    ZH_HANT("在多幀訓練視窗中開啟資料集：在一般訓練器的基礎上加入實驗性的多幀功能，"
+       "並預設開啟 SOG 匯出。「開啟資料集」不受影響。"),
+    KO("데이터셋을 멀티프레임 학습 창에서 엽니다. 일반 학습기에 실험적인 "
+       "멀티프레임 기능이 더해지고 SOG 내보내기가 기본으로 켜져 있습니다. "
+       "'데이터셋 열기'는 그대로입니다."),
+    DE("Öffnet einen Datensatz im Multiframe-Trainingsfenster: der gewohnte "
+       "Trainer plus experimentelle Multiframe-Funktionen, mit standardmäßig "
+       "eingeschaltetem SOG-Export. „Datensatz öffnen“ bleibt unverändert."),
+    FR("Ouvre un jeu de données dans la fenêtre d'entraînement multi-images : "
+       "l'entraîneur habituel plus des fonctions multi-images expérimentales, avec "
+       "l'export SOG activé par défaut. « Ouvrir un jeu de données » reste inchangé."),
+    ES("Abre un conjunto de datos en la ventana de entrenamiento multifotograma: "
+       "el entrenador habitual más funciones multifotograma experimentales, con la "
+       "exportación SOG activada por defecto. «Abrir un conjunto de datos» sigue igual."),
+    PT("Abre um conjunto de dados na janela de treinamento multiquadro: o "
+       "treinador habitual mais recursos multiquadro experimentais, com a exportação "
+       "SOG ativada por padrão. «Abrir um conjunto de dados» continua igual."),
+    IT("Apre un set di dati nella finestra di addestramento multiframe: "
+       "l'addestratore consueto più funzioni multiframe sperimentali, con "
+       "l'esportazione SOG attiva per impostazione predefinita. «Apri un set di dati» "
+       "resta invariato."),
+    NL("Opent een dataset in het multiframe-trainingsvenster: de gewone trainer "
+       "plus experimentele multiframe-functies, met SOG-export standaard aan. "
+       "‘Dataset openen’ blijft ongewijzigd."),
+    RU("Открывает набор данных в окне мультикадрового обучения: обычный "
+       "тренажёр плюс экспериментальные мультикадровые функции, экспорт SOG включён "
+       "по умолчанию. «Открыть набор данных» не меняется."),
+    TR("Veri kümesini çok kareli eğitim penceresinde açar: olağan eğitici "
+       "artı deneysel çok kareli özellikler; SOG dışa aktarımı varsayılan olarak "
+       "açıktır. «Veri kümesi aç» değişmez."));
+
+SS_MSG(multiframe_title,
+    EN("Multiframe Training"),
+    JA("マルチフレーム学習"),
+    ZH_HANS("多帧训练"),
+    ZH_HANT("多幀訓練"),
+    KO("멀티프레임 학습"),
+    DE("Multiframe-Training"),
+    FR("Entraînement multi-images"),
+    ES("Entrenamiento multifotograma"),
+    PT("Treinamento multiquadro"),
+    IT("Addestramento multiframe"),
+    NL("Multiframe-training"),
+    RU("Мультикадровое обучение"),
+    TR("Çok kareli eğitim"));
+
+SS_MSG(multiframe_sog_note,
+    EN("splat.ply is still saved next to the .sog so the two can be compared."),
+    JA("比較できるよう、.sog の隣に splat.ply も引き続き保存されます。"),
+    ZH_HANS("仍会在 .sog 旁保存 splat.ply，方便对比两者。"),
+    ZH_HANT("仍會在 .sog 旁儲存 splat.ply，方便比較兩者。"),
+    KO("비교할 수 있도록 .sog 옆에 splat.ply도 계속 저장됩니다."),
+    DE("splat.ply wird weiterhin neben der .sog gespeichert, damit sich beide "
+       "vergleichen lassen."),
+    FR("splat.ply reste enregistré à côté du .sog pour pouvoir comparer les deux."),
+    ES("splat.ply se sigue guardando junto al .sog para poder comparar ambos."),
+    PT("O splat.ply continua sendo salvo ao lado do .sog para que os dois possam "
+       "ser comparados."),
+    IT("splat.ply viene ancora salvato accanto al .sog per poter confrontare i due."),
+    NL("splat.ply wordt nog steeds naast de .sog opgeslagen, zodat je beide kunt "
+       "vergelijken."),
+    RU("splat.ply по-прежнему сохраняется рядом с .sog, чтобы их можно было "
+       "сравнить."),
+    TR("İkisini karşılaştırabilmek için splat.ply, .sog dosyasının yanına yine "
+       "kaydedilir."));
+
 SS_MSG(home_new_dataset,
     EN("Create Dataset from Photos or Video..."),
     JA("写真や動画からデータセットを作成…"),

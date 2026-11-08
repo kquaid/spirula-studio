@@ -122,9 +122,9 @@ public:
     void set_dpi_scale(float s) { _scale.set_dpi(s); }
 
 private:
-    enum class Screen { Home, NewDataset, Train, Viewer, Batch, Mesh };
+    enum class Screen { Home, NewDataset, Train, Viewer, Batch, Mesh, MultiframeTrain };
     enum class PickAction {
-        None, OpenDataset, SourceImages, SourceVideo, SourceDataset,
+        None, OpenDataset, OpenMultiframe, SourceImages, SourceVideo, SourceDataset,
         SourceReplace, Workspace,
         OutputPrefix, VocabTree, MaskModelFile, SplatFile,
         PresetFile, DatasetPresetFile, MeshPresetFile, PresetSaveFolder,
@@ -534,6 +534,8 @@ private:
     void draw_license_modal();
     void draw_language_menu();       // the picker, and the CJK font prompt
     void draw_train();
+    void draw_multiframe_train();
+    void draw_multiframe_panel();
     void draw_viewer();
     void draw_mesh();
     void draw_mesh_options();
@@ -780,6 +782,13 @@ private:
     // Persisted: the last value the user gave save_full_checkpoint by hand. A
     // preset only overrides it by turning it on.
     bool _keep_full_ckpt = false;
+    // The Multiframe Training window shares the trainer with Train. The flag is
+    // set when a dataset is opened from its Home button; the session then stays in it.
+    bool _next_open_multiframe = false;
+    bool _multiframe_session = false;
+    Screen train_screen() const {
+        return _multiframe_session ? Screen::MultiframeTrain : Screen::Train;
+    }
     ScreenshotSettings _shot;
     std::vector<std::future<std::string>> _shot_jobs;   // path written, or throws
 

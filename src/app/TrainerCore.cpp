@@ -12,6 +12,7 @@
 #include "checkpoint/Resume.h"
 #include "data/ResolutionSchedule.h"
 #include "core/HostMemory.h"
+#include "checkpoint/SogWriter.h"
 #include "checkpoint/SplatPly.h"
 #include "config/TrainConfigJson.h"
 #include "core/ColorSpace.h"
@@ -1668,7 +1669,7 @@ void TrainerSession::restore_checkpoint() {
     log(lfmt(lmsg::resumed_from, {r.ckpt_dir.string(), (long long)start_step}));
 }
 
-void TrainerSession::save_checkpoint(int step, bool full) {
+std::filesystem::path TrainerSession::save_checkpoint(int step, bool full) {
     char name[32];
     std::snprintf(name, sizeof name, "step-%09d.ckpt", step);
     fs::path ckpt = out_dir / name;
@@ -1688,6 +1689,23 @@ void TrainerSession::save_checkpoint(int step, bool full) {
                 stale.push_back(e.path());
         }
         for (const auto& p : stale) remove_tree(p);
+    }
+    return ckpt;
+}
+
+void TrainerSession::export_sog(const fs::path& ckpt) {
+    try {
+        const auto t0 = std::chrono::steady_clock::now();
+        const SplatCloud cloud = read_splat_ply((ckpt / "splat.ply").string(), true);
+        const std::string out = (ckpt / "splat.sog").string();
+        const SogStats stats = write_sog(cloud, out);
+        const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        char mb[32], s[32];
+        std::snprintf(mb, sizeof mb, "%.1f", (double)stats.bytes / (1024.0 * 1024.0));
+        std::snprintf(s, sizeof s, "%.1f", secs);
+        log(lfmt(lmsg::sog_saved, {fs::absolute(out).string(), mb, s}));
+    } catch (const std::exception& e) {
+        log(lfmt(lmsg::sog_failed, {e.what()}));
     }
 }
 
@@ -1971,12 +1989,15 @@ void TrainerSession::train(const TrainerCallbacks& cb) {
     }
     engine_profile_capture_vram();
 
+    fs::path final_ckpt;
     if (cfg.steps_per_save != 0 && save_on_stop.load()) {
         std::lock_guard<std::mutex> lk(engine_mutex);
         // A run stopped short is one to continue later, so its save must be resumable.
-        save_checkpoint(step, cfg.save_full_checkpoint || step < cfg.num_iterations);
+        final_ckpt = save_checkpoint(step, cfg.save_full_checkpoint || step < cfg.num_iterations);
         log(lfmt(lmsg::checkpoint_saved, {fs::absolute(out_dir).string()}));
     }
+    // Outside engine_mutex: the export is host-only and can run for a minute.
+    if (cfg.save_sog && !final_ckpt.empty()) export_sog(final_ckpt);
 
     // Steps THIS run, not cur_step: a resumed run's clock starts here too, and
     // a count that included the checkpoint's steps would not match the time.

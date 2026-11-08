@@ -2107,6 +2107,36 @@ SS_MSG(checkpoint_saved,
     RU("Контрольная точка сохранена: {0}"),
     TR("Denetim noktası şuraya kaydedildi: {0}"));
 
+SS_MSG(sog_saved,
+    EN("SOG exported to: {0} ({1} MB, {2} s)"),
+    JA("SOG を書き出しました: {0}（{1} MB、{2} 秒）"),
+    ZH_HANS("SOG 已导出到：{0}（{1} MB，{2} 秒）"),
+    ZH_HANT("SOG 已匯出到：{0}（{1} MB，{2} 秒）"),
+    KO("SOG를 내보냈습니다: {0} ({1} MB, {2}초)"),
+    DE("SOG exportiert nach: {0} ({1} MB, {2} s)"),
+    FR("SOG exporté dans : {0} ({1} Mo, {2} s)"),
+    ES("SOG exportado en: {0} ({1} MB, {2} s)"),
+    PT("SOG exportado para: {0} ({1} MB, {2} s)"),
+    IT("SOG esportato in: {0} ({1} MB, {2} s)"),
+    NL("SOG geëxporteerd naar: {0} ({1} MB, {2} s)"),
+    RU("SOG экспортирован в: {0} ({1} МБ, {2} с)"),
+    TR("SOG şuraya aktarıldı: {0} ({1} MB, {2} sn)"));
+
+SS_MSG(sog_failed,
+    EN("SOG export failed: {0}; splat.ply is unaffected"),
+    JA("SOG の書き出しに失敗しました: {0}。splat.ply には影響しません"),
+    ZH_HANS("SOG 导出失败：{0}；splat.ply 不受影响"),
+    ZH_HANT("SOG 匯出失敗：{0}；splat.ply 不受影響"),
+    KO("SOG 내보내기에 실패했습니다: {0}. splat.ply에는 영향이 없습니다"),
+    DE("SOG-Export fehlgeschlagen: {0}; splat.ply bleibt unberührt"),
+    FR("Échec de l'export SOG : {0} ; splat.ply n'est pas affecté"),
+    ES("Error al exportar SOG: {0}; splat.ply no se ve afectado"),
+    PT("Falha ao exportar SOG: {0}; splat.ply não é afetado"),
+    IT("Esportazione SOG non riuscita: {0}; splat.ply non è interessato"),
+    NL("SOG-export mislukt: {0}; splat.ply blijft ongewijzigd"),
+    RU("Не удалось экспортировать SOG: {0}; splat.ply не затронут"),
+    TR("SOG dışa aktarımı başarısız: {0}; splat.ply etkilenmedi"));
+
 // Labelled rather than inflected ("Steps: 3", not "3 steps") -- see
 // src/i18n/README.md. Steps counts what THIS run did, so it pairs with a
 // time that also excludes whatever a resumed checkpoint already had.

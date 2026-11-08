@@ -300,7 +300,11 @@ public:
     // caller must hold engine_mutex.
     std::map<std::string, float> train_step(int step);
 
-    void save_checkpoint(int step, bool full);
+    std::filesystem::path save_checkpoint(int step, bool full);
+
+    // Writes <ckpt>/splat.sog from the checkpoint's splat.ply. Logs a failure
+    // and returns; a model is never lost to an export problem.
+    void export_sog(const std::filesystem::path& ckpt);
 
     // Scores the held-out views into metrics.json: l1/psnr/ssim, LPIPS when its
     // hooks are installed, and cc_ variants on the colour-corrected render.
