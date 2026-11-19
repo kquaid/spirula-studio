@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <cstdio>
 #include <deque>
+#include <map>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
@@ -122,24 +123,42 @@ int multiframe_frame_number(const std::string& name) {
     return std::stoi(name);
 }
 
-std::vector<int> multiframe_frames(const std::string& root, int first, int last) {
-    auto folder = [&](int n) { return fs::path(root) / std::to_string(n); };
-    auto exists = [&](int n) {
-        std::error_code ec;
-        return fs::is_directory(folder(n), ec);
+std::vector<MultiframeFrame> multiframe_frames(const std::string& root, int first, int last,
+                                               size_t name_width) {
+    std::map<int, fs::path> found;
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(root, ec)) {
+        std::error_code dir_ec;
+        if (!entry.is_directory(dir_ec)) continue;
+        const std::string name = entry.path().filename().string();
+        const int n = multiframe_frame_number(name);
+        if (n < 0) continue;
+        auto it = found.find(n);
+        if (it == found.end() ||
+            (name.size() == name_width && it->second.filename().string().size() != name_width))
+            found[n] = entry.path();
+    }
+    auto missing = [&](int n) {
+        std::string name = std::to_string(n);
+        if (name.size() < name_width) name.insert(0, name_width - name.size(), '0');
+        return lfmt(lmsg::mf_err_frame_missing, {(fs::path(root) / name).string()});
     };
-    std::vector<int> frames;
+
+    std::vector<MultiframeFrame> frames;
     if (last >= 0) {
         for (int n = first; n <= last; n++) {
-            if (!exists(n))
-                throw std::runtime_error(lfmt(lmsg::mf_err_frame_missing, {folder(n).string()}));
-            frames.push_back(n);
+            auto it = found.find(n);
+            if (it == found.end()) throw std::runtime_error(missing(n));
+            frames.push_back({n, it->second.string()});
         }
     } else {
-        for (int n = first; exists(n); n++) frames.push_back(n);
+        for (int n = first;; n++) {
+            auto it = found.find(n);
+            if (it == found.end()) break;
+            frames.push_back({n, it->second.string()});
+        }
     }
-    if (frames.empty())
-        throw std::runtime_error(lfmt(lmsg::mf_err_frame_missing, {folder(first).string()}));
+    if (frames.empty()) throw std::runtime_error(missing(first));
     return frames;
 }
 
@@ -180,15 +199,16 @@ void run_multiframe(TrainerSession& s, const MultiframeSettings& m,
         throw std::runtime_error(lfmt(lmsg::mf_err_folder_name, {opened.filename().string()}));
     const fs::path root = opened.parent_path();
 
-    const std::vector<int> frames =
-        multiframe_frames(root.string(), m.first_frame >= 0 ? m.first_frame : opened_n, m.last_frame);
+    const std::vector<MultiframeFrame> frames =
+        multiframe_frames(root.string(), m.first_frame >= 0 ? m.first_frame : opened_n, m.last_frame,
+                          opened.filename().string().size());
     const int total = (int)frames.size();
     const fs::path out = m.output_dir.empty() ? root / "multiframe_out" : fs::path(m.output_dir);
     fs::create_directories(out / "ply");
     fs::create_directories(out / "sog");
     s.out_dir_override = (out / "run").string();
-    s.log(lfmt(lmsg::mf_batch_start, {(long long)total, (long long)frames.front(),
-                                      (long long)frames.back(), out.string()}));
+    s.log(lfmt(lmsg::mf_batch_start, {(long long)total, (long long)frames.front().number,
+                                      (long long)frames.back().number, out.string()}));
 
     const TrainConfig refine = multiframe_refine_config(s.cfg, m);
     s.cfg.save_sog = false;   // each frame is exported here, not by train()
@@ -196,8 +216,8 @@ void run_multiframe(TrainerSession& s, const MultiframeSettings& m,
     fs::path current = opened;
     int done = 0;
     for (int i = 0; i < total; i++) {
-        const int n = frames[(size_t)i];
-        const fs::path dir = root / std::to_string(n);
+        const int n = frames[(size_t)i].number;
+        const fs::path dir = fs::path(frames[(size_t)i].folder).lexically_normal();
         if (dir != current) {
             s.rebase_dataset(current.string(), dir.string());
             current = dir;

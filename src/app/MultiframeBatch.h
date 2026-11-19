@@ -21,6 +21,11 @@ struct MultiframeSettings {
     std::string output_dir;          // empty: <root>/multiframe_out
 };
 
+struct MultiframeFrame {
+    int number = 0;       // the folder name read as a number: "0007" is 7
+    std::string folder;   // the folder as spelled on disk
+};
+
 struct MultiframeHooks {
     // A frame's engine is set up; engine_mutex is held. Viewer uploads go here.
     std::function<void(int frame, int index, int total)> engine_ready;
@@ -31,9 +36,11 @@ struct MultiframeHooks {
 // The folder name as a frame number, or -1 when it is not one.
 int multiframe_frame_number(const std::string& folder_name);
 
-// The frames to run, in order. Throws when a folder is missing: any in an
-// explicit range, or the first of an open-ended one.
-std::vector<int> multiframe_frames(const std::string& root, int first, int last);
+// The frames to run, in order, found by scanning `root` for numeric folder
+// names, so "0000" and "0" both work; `name_width` breaks a tie between two
+// spellings. Throws on a missing folder in a range, or the first of an open run.
+std::vector<MultiframeFrame> multiframe_frames(const std::string& root, int first, int last,
+                                               size_t name_width = 0);
 
 // The config every frame after the first trains with.
 TrainConfig multiframe_refine_config(const TrainConfig& base, const MultiframeSettings& m);

@@ -34,19 +34,46 @@ void frame_discovery() {
     const fs::path root = fs::temp_directory_path() / "multiframe_batch_test";
     fs::remove_all(root);
     for (int n : {0, 1, 2, 4}) fs::create_directories(root / std::to_string(n));
+    fs::create_directories(root / "notes");
 
     const auto all = spirula::multiframe_frames(root.string(), 0, -1);
-    check(all.size() == 3 && all.front() == 0 && all.back() == 2, "open-ended run stops at the first gap");
+    check(all.size() == 3 && all.front().number == 0 && all.back().number == 2,
+          "open-ended run stops at the first gap");
     const auto from1 = spirula::multiframe_frames(root.string(), 1, -1);
-    check(from1.size() == 2 && from1.front() == 1, "open-ended run starts where asked");
+    check(from1.size() == 2 && from1.front().number == 1, "open-ended run starts where asked");
     const auto range = spirula::multiframe_frames(root.string(), 1, 2);
-    check(range.size() == 2 && range.back() == 2, "an explicit range is honoured");
+    check(range.size() == 2 && range.back().number == 2, "an explicit range is honoured");
     check(throws([&] { spirula::multiframe_frames(root.string(), 0, 4); }),
           "a gap inside an explicit range stops the batch");
     check(throws([&] { spirula::multiframe_frames(root.string(), 9, -1); }),
           "a missing first frame stops the batch");
     check(throws([&] { spirula::multiframe_frames(root.string(), 3, 1); }),
           "an inverted range runs nothing and is refused");
+    fs::remove_all(root);
+}
+
+void padded_folders() {
+    const fs::path root = fs::temp_directory_path() / "multiframe_padded_test";
+    fs::remove_all(root);
+    for (const char* name : {"0000", "0001", "0002", "0004"}) fs::create_directories(root / name);
+
+    const auto all = spirula::multiframe_frames(root.string(), 0, -1, 4);
+    check(all.size() == 3 && all[2].number == 2, "padded folders are found by their number");
+    check(fs::path(all[1].folder).filename() == "0001", "the folder keeps its on-disk spelling");
+    const auto range = spirula::multiframe_frames(root.string(), 1, 2, 4);
+    check(range.size() == 2 && fs::path(range[0].folder).filename() == "0001",
+          "an explicit range is indexed by folder number");
+    check(throws([&] { spirula::multiframe_frames(root.string(), 0, 3, 4); }),
+          "a gap in padded folders stops the batch");
+
+    fs::create_directories(root / "7");
+    fs::create_directories(root / "0007");
+    const auto wide = spirula::multiframe_frames(root.string(), 7, 7, 4);
+    check(wide.size() == 1 && fs::path(wide[0].folder).filename() == "0007",
+          "when a number has two spellings the opened folder's width wins");
+    const auto narrow = spirula::multiframe_frames(root.string(), 7, 7, 1);
+    check(narrow.size() == 1 && fs::path(narrow[0].folder).filename() == "7",
+          "and so does a narrower one");
     fs::remove_all(root);
 }
 
@@ -100,6 +127,7 @@ void rebase() {
 int main() {
     frame_numbers();
     frame_discovery();
+    padded_folders();
     refine_config();
     rebase();
     if (failures) { std::fprintf(stderr, "%d failure(s)\n", failures); return 1; }
