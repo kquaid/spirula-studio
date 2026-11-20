@@ -316,8 +316,10 @@ void TrainRunner::start_multiframe(const TrainConfig& cfg, const std::string& pr
             bool first = true;
             spirula::MultiframeHooks hooks;
             hooks.engine_ready = [this, s, &first](int frame, int index, int total) {
-                s->viewer_base_camera_size = viewer_upload_cameras(s->post);
-                viewer_upload_grid(s->post);
+                if (first) {
+                    s->viewer_base_camera_size = viewer_upload_cameras(s->post);
+                    viewer_upload_grid(s->post);
+                }
                 _mf_frame = frame;
                 _mf_index = index;
                 _mf_total = total;

@@ -97,6 +97,7 @@ void refine_config() {
     check(c.num_iterations == 100, "frames run the chosen iteration count");
     check(c.refine_every == 0, "growth and relocation are off");
     check(c.noise_lr == 0.0f && c.noise_lr_final == 0.0f, "MCMC noise is off");
+    check(c.opacity_reg == 0.0f && c.scale_reg == 0.0f, "nothing pushes splats toward death");
     check(c.steps_per_save == 0 && !c.save_sog, "the batch saves frames itself");
     check(!c.progressive_resolution && c.sh_degree_warmup_every == 0, "no step-keyed ramps");
     check(c.init_ply.empty(), "frames seed from the previous frame, not a file");

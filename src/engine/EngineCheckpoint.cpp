@@ -190,7 +190,8 @@ void engine_save_checkpoint(
     std::string output_dir,
     bool full_dump,
     int step,
-    int background_export_height
+    int background_export_height,
+    bool keep_all_splats
 ) {
     if (background_export_height < 1 || background_export_height > 8192)
         throw std::runtime_error("background_export_height must be in [1, 8192]");
@@ -320,6 +321,7 @@ void engine_save_checkpoint(
                 if (!fin3(h_features_sh[i*K + j])) { ok = false; break; }
             }
         }
+        if (keep_all_splats) { kept++; continue; }
         if (!ok) { keep[i] = 0; nan_dropped++; continue; }
         if (h_opacities[i] < OPA_MIN) { keep[i] = 0; lowopa_dropped++; continue; }
         const float3& sc = h_scales[i];

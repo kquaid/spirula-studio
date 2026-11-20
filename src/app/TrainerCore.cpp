@@ -1293,6 +1293,83 @@ static float estimate_views_per_point(const ParsedDataset& ds, float quantile) {
     return (float)counts[k];
 }
 
+void TrainerSession::setup_data_manager() {
+    const int64_t N = ds.num_cameras;
+    int64_t num_val = (int64_t)ds.val_indices.size();
+    int64_t num_train = N - num_val;
+    // Batch-size policy.
+    double n_batch = std::max((double)num_train / std::max(cfg.max_batch_per_epoch, 1), 1.0);
+    int train_bs = std::max(1, (int)(n_batch + 0.5));
+    if (cfg.min_renders_per_refine > 0.0f && num_train > 0) {
+        // A splat seen by V cameras is rendered B * refine_every * V / N_train
+        // times between two rounds; hold that above the floor for the
+        // poorly seen quantile, estimated from the seed points and frusta.
+        const float v_q = estimate_views_per_point(ds, cfg.render_quantile);
+        const double per_round = (double)std::max(cfg.refine_every, 1) * std::max(v_q, 1.0f);
+        const int bs_need = (int)std::ceil((double)cfg.min_renders_per_refine * (double)num_train / per_round);
+        const int bs_old = train_bs;
+        if (cfg.max_train_batch_size > 0)
+            train_bs = std::max(1, std::min(std::max(train_bs, bs_need), cfg.max_train_batch_size));
+        n_batch = (double)train_bs;
+        log(lfmt(lmsg::batch_from_renders,
+                 {(double)v_q, (long long)bs_old, (long long)train_bs}));
+    }
+    _batches_per_epoch = (int)std::max<int64_t>(1, (num_train + train_bs - 1) / train_bs);
+    int val_bs = 1;
+    if (num_val > 0)
+        val_bs = std::max(1, (int)std::ceil(n_batch * (double)num_val / (double)num_train));
+
+    DataManagerConfig dm;
+    dm.cache_mode  = (cfg.cache_images == "disk") ? CacheMode::DISK : CacheMode::CPU;
+    dm.seed = (uint64_t)std::max(cfg.sampling_seed,0);
+    // A split needs a mask even when none is on disk: the synthesized
+    // all-white one becomes the post-split FOV mask (0 past the lens),
+    // without which the unseen face regions train as black.
+    dm.load_masks  = has_mask || post.any_fov_mask;
+    dm.load_depths      = has_depth;
+    dm.load_normals     = has_normal;
+    dm.train_batch_size = train_bs;
+    dm.val_batch_size   = val_bs;
+    dm.flip_mask = cfg.flip_mask;
+    set_alpha_config(dm, alpha_images);
+    dm.mask_boundary_offset = cfg.mask_boundary_offset;
+    dm.exif_quarter_turns = ds.exif_quarter_turns;
+    set_downscale_cache(dm);
+    dm.deficit_sampling  = cfg.view_sampling == "deficit";
+    dm.deficit_power     = cfg.view_deficit_power;
+    dm.deficit_max_ratio = cfg.view_deficit_max_ratio;
+    if (cfg.progressive_resolution) {
+        for (const auto& [epoch, divisor] : progressive::to_epochs(resolution_setpoints(cfg), _batches_per_epoch))
+            dm.resolution_stages.emplace_back(epoch * _batches_per_epoch, divisor);
+        if (!cfg.resume.empty()) {
+            try {
+                const JsonValue state = ckpt::read_state_json(ckpt::resolve_checkpoint(cfg.resume).ckpt_dir);
+                if (const JsonValue* saved = state.find("step")) dm.first_step = saved->as_int();
+            } catch (const std::exception&) {}   // restore_checkpoint reports it
+        }
+        for (const auto& [from, divisor] : dm.resolution_stages)
+            log(divisor > 1 ? lfmt(lmsg::progressive_stage, {(long long)divisor, (long long)from})
+                            : lfmt(lmsg::progressive_stage_full, {(long long)from}));
+    }
+    engine_setup_data_manager(
+        dm, ds.camera_models, ds.camera_distortions,
+        ds.image_filenames,
+        has_mask ? ds.mask_filenames : std::vector<std::string>{},
+        has_depth ? ds.depth_filenames : std::vector<std::string>{},
+        has_normal ? ds.normal_filenames : std::vector<std::string>{},
+        ds.widths, ds.heights,
+        post.any_warp ? post.K_per_camera : std::vector<int32_t>{},
+        post.any_warp ? post.post_offsets : std::vector<int32_t>{},
+        post.viewmats, post.intrins, post.dist_coeffs,
+        post.any_warp ? post.post_widths : std::vector<int32_t>{},
+        post.any_warp ? post.post_heights : std::vector<int32_t>{},
+        post.any_warp ? post.face_axes : std::vector<float>{},
+        post.input_intrins, post.input_dist_coeffs,
+        post.redistort_models, post.redistort_params,
+        ds.train_indices, ds.val_indices);
+    engine_set_view_stats(dm.deficit_sampling);
+}
+
 void TrainerSession::setup_engine() {
 #ifndef SS_BACKEND_VULKAN
     check_cuda_runtime();
@@ -1422,81 +1499,7 @@ void TrainerSession::setup_engine() {
             image_cs_on ? vec(gamut_to_rec709(color.image_gamut)) : std::vector<float>{});
     }
 
-    // ---- DataManager ---------------------------------------------------
-    const int64_t N = ds.num_cameras;
-    int64_t num_val = (int64_t)ds.val_indices.size();
-    int64_t num_train = N - num_val;
-    // Batch-size policy.
-    double n_batch = std::max((double)num_train / std::max(cfg.max_batch_per_epoch, 1), 1.0);
-    int train_bs = std::max(1, (int)(n_batch + 0.5));
-    if (cfg.min_renders_per_refine > 0.0f && num_train > 0) {
-        // A splat seen by V cameras is rendered B * refine_every * V / N_train
-        // times between two rounds; hold that above the floor for the
-        // poorly seen quantile, estimated from the seed points and frusta.
-        const float v_q = estimate_views_per_point(ds, cfg.render_quantile);
-        const double per_round = (double)std::max(cfg.refine_every, 1) * std::max(v_q, 1.0f);
-        const int bs_need = (int)std::ceil((double)cfg.min_renders_per_refine * (double)num_train / per_round);
-        const int bs_old = train_bs;
-        if (cfg.max_train_batch_size > 0)
-            train_bs = std::max(1, std::min(std::max(train_bs, bs_need), cfg.max_train_batch_size));
-        n_batch = (double)train_bs;
-        log(lfmt(lmsg::batch_from_renders,
-                 {(double)v_q, (long long)bs_old, (long long)train_bs}));
-    }
-    _batches_per_epoch = (int)std::max<int64_t>(1, (num_train + train_bs - 1) / train_bs);
-    int val_bs = 1;
-    if (num_val > 0)
-        val_bs = std::max(1, (int)std::ceil(n_batch * (double)num_val / (double)num_train));
-
-    DataManagerConfig dm;
-    dm.cache_mode  = (cfg.cache_images == "disk") ? CacheMode::DISK : CacheMode::CPU;
-    dm.seed = (uint64_t)std::max(cfg.sampling_seed,0);
-    // A split needs a mask even when none is on disk: the synthesized
-    // all-white one becomes the post-split FOV mask (0 past the lens),
-    // without which the unseen face regions train as black.
-    dm.load_masks  = has_mask || post.any_fov_mask;
-    dm.load_depths      = has_depth;
-    dm.load_normals     = has_normal;
-    dm.train_batch_size = train_bs;
-    dm.val_batch_size   = val_bs;
-    dm.flip_mask = cfg.flip_mask;
-    set_alpha_config(dm, alpha_images);
-    dm.mask_boundary_offset = cfg.mask_boundary_offset;
-    dm.exif_quarter_turns = ds.exif_quarter_turns;
-    set_downscale_cache(dm);
-    dm.deficit_sampling  = cfg.view_sampling == "deficit";
-    dm.deficit_power     = cfg.view_deficit_power;
-    dm.deficit_max_ratio = cfg.view_deficit_max_ratio;
-    if (cfg.progressive_resolution) {
-        for (const auto& [epoch, divisor] : progressive::to_epochs(resolution_setpoints(cfg), _batches_per_epoch))
-            dm.resolution_stages.emplace_back(epoch * _batches_per_epoch, divisor);
-        if (!cfg.resume.empty()) {
-            try {
-                const JsonValue state = ckpt::read_state_json(ckpt::resolve_checkpoint(cfg.resume).ckpt_dir);
-                if (const JsonValue* saved = state.find("step")) dm.first_step = saved->as_int();
-            } catch (const std::exception&) {}   // restore_checkpoint reports it
-        }
-        for (const auto& [from, divisor] : dm.resolution_stages)
-            log(divisor > 1 ? lfmt(lmsg::progressive_stage, {(long long)divisor, (long long)from})
-                            : lfmt(lmsg::progressive_stage_full, {(long long)from}));
-    }
-    engine_setup_data_manager(
-        dm, ds.camera_models, ds.camera_distortions,
-        ds.image_filenames,
-        has_mask ? ds.mask_filenames : std::vector<std::string>{},
-        has_depth ? ds.depth_filenames : std::vector<std::string>{},
-        has_normal ? ds.normal_filenames : std::vector<std::string>{},
-        ds.widths, ds.heights,
-        post.any_warp ? post.K_per_camera : std::vector<int32_t>{},
-        post.any_warp ? post.post_offsets : std::vector<int32_t>{},
-        post.viewmats, post.intrins, post.dist_coeffs,
-        post.any_warp ? post.post_widths : std::vector<int32_t>{},
-        post.any_warp ? post.post_heights : std::vector<int32_t>{},
-        post.any_warp ? post.face_axes : std::vector<float>{},
-        post.input_intrins, post.input_dist_coeffs,
-        post.redistort_models, post.redistort_params,
-        ds.train_indices, ds.val_indices);
-    engine_set_view_stats(dm.deficit_sampling);
+    setup_data_manager();
 
     // ---- Bilagrid / PPISP init -----------------------------------------
     // Enablement conditions are static here (dataset modalities known up
@@ -1603,11 +1606,6 @@ void TrainerSession::setup_engine() {
 // Where the run's first splats come from: the dataset's point cloud, an
 // --init-ply warm start, or both. A resume overwrites them either way.
 SeedSplats TrainerSession::seed_world(const ColorResolution& color) {
-    if (carried_splats) {
-        SeedSplats carried = std::move(*carried_splats);
-        carried_splats.reset();
-        return carried;
-    }
     if (cfg.init_ply.empty() || !cfg.resume.empty())
         return seed_splats(ds.points, cfg, color);
 
@@ -1672,33 +1670,6 @@ void TrainerSession::restore_checkpoint() {
         cfg.background_sh_degree = bg_deg;
     }
     log(lfmt(lmsg::resumed_from, {r.ckpt_dir.string(), (long long)start_step}));
-}
-
-SeedSplats TrainerSession::capture_splats() const {
-    SeedSplats s;
-    const int64_t cap = engine_get_max_num_splats();
-    const int64_t K = engine_get_num_sh();
-    s.num = engine_get_cur_num_splats();
-    s.means.resize((size_t)(cap * 3));
-    s.quats.resize((size_t)(cap * 4));
-    s.scales.resize((size_t)(cap * 3));
-    s.opacities.resize((size_t)cap);
-    s.features_dc.resize((size_t)(cap * 3));
-    s.features_sh.resize((size_t)(cap * K * 3));
-    auto tv = [](std::vector<float>& v, std::vector<int64_t> shape) -> TorchTensorView {
-        return {(uint64_t)(uintptr_t)(v.empty() ? nullptr : v.data()), (uint32_t)sizeof(float),
-                std::move(shape)};
-    };
-    engine_copy_splats_to_host(tv(s.means, {cap, 3}), tv(s.quats, {cap, 4}),
-                               tv(s.scales, {cap, 3}), tv(s.opacities, {cap, 1}),
-                               tv(s.features_dc, {cap, 3}), tv(s.features_sh, {cap, K, 3}));
-    s.means.resize((size_t)(s.num * 3));
-    s.quats.resize((size_t)(s.num * 4));
-    s.scales.resize((size_t)(s.num * 3));
-    s.opacities.resize((size_t)s.num);
-    s.features_dc.resize((size_t)(s.num * 3));
-    s.features_sh.resize((size_t)(s.num * K * 3));
-    return s;
 }
 
 void TrainerSession::rebase_dataset(const std::string& from, const std::string& to) {

@@ -174,7 +174,9 @@ TrainConfig multiframe_refine_config(const TrainConfig& base, const MultiframeSe
     c.refine_every = 0;
     c.noise_lr = 0.0f;
     c.noise_lr_final = 0.0f;
-    // Every step-keyed ramp would otherwise restart inside a 100-step frame.
+    // These push opacity and scale down and rely on relocation to revive what dies.
+    c.opacity_reg = 0.0f;
+    c.scale_reg = 0.0f;
     c.sh_degree_warmup_every = 0;
     c.progressive_resolution = false;
     const float k = std::max(m.lr_scale, 0.0f);
@@ -226,29 +228,36 @@ void run_multiframe(TrainerSession& s, const MultiframeSettings& m,
         s.log(lfmt(lmsg::mf_frame_start, {(long long)n, (long long)(i + 1), (long long)total}));
         {
             std::lock_guard<std::mutex> lk(s.engine_mutex);
-            s.start_step = 0;
-            s.cur_step = 0;
-            s.setup_engine();
+            // The engine is set up once. Later frames only swap the images: the
+            // splats, optimizer moments and appearance state carry straight over.
+            if (i == 0) {
+                s.setup_engine();
+            } else {
+                s.setup_data_manager();
+            }
             if (h.engine_ready) h.engine_ready(n, i, total);
         }
         if (i == 0) {
             std::error_code ec;
             fs::copy_file(out / "run" / "scene_transform.json", out / "scene_transform.json",
                           fs::copy_options::overwrite_existing, ec);
+        } else {
+            // The step counter keeps running so Adam's bias correction and every
+            // step-keyed schedule continue where the last frame stopped.
+            s.start_step = s.cur_step.load();
+            s.cfg.num_iterations = s.start_step + std::max(1, m.frame_iterations);
         }
 
         s.train(cb);
         if (s.stop_requested.load()) break;
 
         const fs::path tmp = out / "tmp";
-        SeedSplats next;
         {
             std::lock_guard<std::mutex> lk(s.engine_mutex);
             fs::remove_all(tmp);
             fs::create_directories(tmp);
             engine_save_checkpoint(tmp.string(), false, s.cur_step.load(),
-                                   s.cfg.background_export_height);
-            next = s.capture_splats();
+                                   s.cfg.background_export_height, true);
         }
         const fs::path ply = out / "ply" / frame_file(n, "ply");
         replace_file(tmp / "splat.ply", ply);
@@ -263,7 +272,6 @@ void run_multiframe(TrainerSession& s, const MultiframeSettings& m,
             s.write_config_json = false;
         }
         s.cfg.data = current.string();
-        s.carried_splats = std::move(next);
     }
 
     if (exporter.pending()) s.log(lmsg::mf_sog_waiting.get());

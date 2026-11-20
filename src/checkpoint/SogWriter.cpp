@@ -31,7 +31,10 @@ using Entry = std::pair<std::string, Bytes>;
 
 float signed_log(float v) { return std::copysign(std::log1p(std::fabs(v)), v); }
 
-uint8_t to_byte(float v) { return (uint8_t)std::lround(std::clamp(v, 0.0f, 255.0f)); }
+uint8_t to_byte(float v) {
+    if (!std::isfinite(v)) return 0;
+    return (uint8_t)std::lround(std::clamp(v, 0.0f, 255.0f));
+}
 
 // ================
 // Codebooks

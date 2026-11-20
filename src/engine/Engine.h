@@ -705,14 +705,15 @@ std::string engine_vram_report();
 // SS_PROFILE is set.
 void engine_profile_capture_vram();
 
-// Writes splat.ply, state.tar and (for SH backgrounds) a 2:1 background.webp.
-// full_dump includes optimizer state for resume; otherwise saves appearance only.
-// Device buffers are copied in chunks; background_export_height is in pixels.
+// Writes splat.ply, state.tar and (SH backgrounds) background.webp; full_dump adds
+// the optimizer state. splat.ply omits non-finite, near-transparent and dead-scale
+// splats unless keep_all_splats, so row i stays splat i. Height is in pixels.
 void engine_save_checkpoint(
     std::string output_dir,
     bool full_dump,
     int step,
-    int background_export_height = 512
+    int background_export_height = 512,
+    bool keep_all_splats = false
 );
 
 // Requires seeded world buffers and initialized appearance channels; returns the saved step.
